@@ -12,14 +12,203 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once __DIR__ . '/../config/database.php';
 $pdo = Database::getConnection();
 
-// 1. Processar troca direta via URL (?role=...)
+// 1. Verificação de Autorização do Fundador
+$isFounderAuthorized = false;
+
+// Já autenticado na sessão ativa como fundador / superadmin
+if (!empty($_SESSION['master_authorized']) || ($_SESSION['agendou_user_role'] ?? '') === 'superadmin' || ($_SESSION['google_email'] ?? '') === 'fbr4g4@gmail.com') {
+    $isFounderAuthorized = true;
+    $_SESSION['master_authorized'] = true;
+}
+
+// Se enviou senha master pelo formulário de desbloqueio
+$authError = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['master_password'])) {
+    $inputPass = trim($_POST['master_password'] ?? '');
+    
+    // Validar com senha padrão do fundador ou com o hash do superadmin no banco
+    $validMaster = ($inputPass === 'admin123');
+    if (!$validMaster) {
+        $stmtSuper = $pdo->prepare("SELECT password FROM users WHERE role = 'superadmin' LIMIT 1");
+        $stmtSuper->execute();
+        $superHash = $stmtSuper->fetchColumn();
+        if ($superHash && password_verify($inputPass, $superHash)) {
+            $validMaster = true;
+        }
+    }
+    
+    if ($validMaster) {
+        $_SESSION['master_authorized'] = true;
+        $_SESSION['agendou_user_id'] = 1;
+        $_SESSION['agendou_user_role'] = 'superadmin';
+        unset($_SESSION['admin_tenant_id']);
+        $isFounderAuthorized = true;
+    } else {
+        $authError = 'Chave Master incorreta. Acesso restrito ao fundador.';
+    }
+}
+
+// Se NÃO estiver autorizado, renderizar tela de bloqueio e impedir qualquer troca
+if (!$isFounderAuthorized) {
+    ?>
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <title>Central Master • Acesso Restrito (fbr4g4@gmail.com)</title>
+        <link rel="icon" type="image/png" sizes="32x32" href="/app/agendou/public/icons/favicon-32x32.png"/>
+        <link rel="icon" type="image/png" sizes="16x16" href="/app/agendou/public/icons/favicon-16x16.png"/>
+        <link rel="shortcut icon" href="/app/agendou/public/icons/favicon.ico"/>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+        <style>
+            :root {
+                --bg-base: #07090e;
+                --bg-card: rgba(15, 20, 31, 0.85);
+                --border-glass: rgba(255, 255, 255, 0.08);
+                --primary: #10b981;
+                --accent: #38bdf8;
+            }
+            body {
+                background-color: var(--bg-base);
+                background-image: 
+                    radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.1) 0px, transparent 50%),
+                    radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
+                color: #f8fafc;
+                font-family: 'Plus Jakarta Sans', sans-serif;
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+                margin: 0;
+            }
+            .lock-box {
+                background: var(--bg-card);
+                border: 1px solid var(--border-glass);
+                border-radius: 24px;
+                padding: 40px 32px;
+                max-width: 440px;
+                width: 100%;
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+                text-align: center;
+                backdrop-filter: blur(20px);
+            }
+            .lock-icon-badge {
+                width: 64px;
+                height: 64px;
+                border-radius: 20px;
+                background: rgba(56, 189, 248, 0.12);
+                border: 1px solid rgba(56, 189, 248, 0.25);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.8rem;
+                margin: 0 auto 20px;
+                box-shadow: 0 8px 24px rgba(56, 189, 248, 0.2);
+            }
+            .form-input-pass {
+                background: rgba(255, 255, 255, 0.04);
+                border: 1px solid var(--border-glass);
+                border-radius: 12px;
+                color: #fff;
+                padding: 14px 16px;
+                font-size: 1rem;
+                width: 100%;
+                margin-bottom: 16px;
+                outline: none;
+                transition: border-color 0.2s;
+            }
+            .form-input-pass:focus {
+                border-color: var(--accent);
+                background: rgba(255, 255, 255, 0.07);
+            }
+            .btn-unlock {
+                background: linear-gradient(135deg, #0284c7, #0284c7 50%, #0369a1);
+                color: #fff;
+                font-weight: 800;
+                font-size: 0.95rem;
+                border: none;
+                border-radius: 12px;
+                padding: 14px;
+                width: 100%;
+                cursor: pointer;
+                box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);
+                transition: all 0.2s ease;
+            }
+            .btn-unlock:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(2, 132, 199, 0.6);
+            }
+            .err-msg {
+                background: rgba(239, 68, 68, 0.15);
+                border: 1px solid rgba(239, 68, 68, 0.3);
+                color: #f87171;
+                padding: 10px 14px;
+                border-radius: 10px;
+                font-size: 0.85rem;
+                margin-bottom: 18px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="lock-box">
+            <div class="lock-icon-badge">🔐</div>
+            <div style="font-size: 0.72rem; text-transform: uppercase; font-weight: 800; color: var(--accent); letter-spacing: 0.08em; margin-bottom: 6px;">
+                Acesso Restrito ao Fundador
+            </div>
+            <h2 style="font-size: 1.45rem; font-weight: 800; color: #fff; margin-bottom: 8px;">
+                Central Master
+            </h2>
+            <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 24px; line-height: 1.5;">
+                Exclusivo para <strong>fbr4g4@gmail.com</strong>. Digite sua Chave Master para alternar entre os níveis do sistema.
+            </p>
+
+            <?php if ($authError): ?>
+                <div class="err-msg"><?= htmlspecialchars($authError) ?></div>
+            <?php endif; ?>
+
+            <form method="POST">
+                <input type="password" name="master_password" class="form-input-pass" placeholder="Digite a Chave Master..." autofocus required>
+                <button type="submit" class="btn-unlock">⚡ Desbloquear Central</button>
+            </form>
+
+            <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-glass);">
+                <a href="/app/agendou/admin/login.php" style="color: #64748b; font-size: 0.8rem; text-decoration: none; font-weight: 600;">
+                    ← Voltar ao Login do Estabelecimento
+                </a>
+            </div>
+        </div>
+    </body>
+    </html>
+    <?php
+    exit;
+}
+
+// 2. Processar Desconexão
+if (isset($_GET['logout'])) {
+    $_SESSION = [];
+    if (ini_get("session.use_cookies")) {
+        $params = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 42000,
+            $params["path"], $params["domain"],
+            $params["secure"], $params["httponly"]
+        );
+    }
+    session_destroy();
+    header("Location: /app/agendou/admin/switch.php");
+    exit;
+}
+
+// 3. Processar troca direta via URL (?role=...) apenas para o Fundador Autenticado
 $roleParam = $_GET['role'] ?? '';
 $tenantParam = (int)($_GET['tenant'] ?? 0);
 
 if ($roleParam === 'super' || $roleParam === 'superadmin') {
-    // Definir sessão como Super Admin global
     $_SESSION['agendou_user_id'] = 1;
     $_SESSION['agendou_user_role'] = 'superadmin';
+    $_SESSION['master_authorized'] = true;
     unset($_SESSION['admin_tenant_id']);
     $_SESSION['master_logged_as'] = 'Super Administrador (fbr4g4@gmail.com)';
     header("Location: /app/agendou/admin/super.php");
@@ -27,10 +216,8 @@ if ($roleParam === 'super' || $roleParam === 'superadmin') {
 }
 
 if ($roleParam === 'barber' || $roleParam === 'barbearia1' || $roleParam === 'pedromendes') {
-    // Barbearia 1 (Tenant 1) ou outro tenant especificado
     $targetTenantId = ($tenantParam > 0) ? $tenantParam : 1;
     
-    // Buscar usuário do tenant
     $stmtU = $pdo->prepare("SELECT id FROM users WHERE tenant_id = ? AND role = 'tenant_admin' LIMIT 1");
     $stmtU->execute([$targetTenantId]);
     $userId = (int)$stmtU->fetchColumn() ?: 2;
@@ -38,13 +225,13 @@ if ($roleParam === 'barber' || $roleParam === 'barbearia1' || $roleParam === 'pe
     $_SESSION['agendou_user_id'] = $userId;
     $_SESSION['agendou_user_role'] = 'tenant_admin';
     $_SESSION['admin_tenant_id'] = $targetTenantId;
+    $_SESSION['master_authorized'] = true;
     $_SESSION['master_logged_as'] = 'Dono do Estabelecimento (Tenant #' . $targetTenantId . ')';
     header("Location: /app/agendou/admin/index.php");
     exit;
 }
 
 if ($roleParam === 'viking') {
-    // Barbearia Viking Club (Tenant 2)
     $stmtU = $pdo->prepare("SELECT id FROM users WHERE tenant_id = 2 AND role = 'tenant_admin' LIMIT 1");
     $stmtU->execute();
     $userId = (int)$stmtU->fetchColumn() ?: 3;
@@ -52,20 +239,14 @@ if ($roleParam === 'viking') {
     $_SESSION['agendou_user_id'] = $userId;
     $_SESSION['agendou_user_role'] = 'tenant_admin';
     $_SESSION['admin_tenant_id'] = 2;
+    $_SESSION['master_authorized'] = true;
     $_SESSION['master_logged_as'] = 'Barbearia Viking Club (Tenant #2)';
     header("Location: /app/agendou/admin/index.php");
     exit;
 }
 
 if ($roleParam === 'client') {
-    // Cliente final testando agendamento
     header("Location: /app/agendou/?slug=pedromendes&test_client=1");
-    exit;
-}
-
-if (isset($_GET['logout'])) {
-    session_destroy();
-    header("Location: /app/agendou/admin/switch.php");
     exit;
 }
 

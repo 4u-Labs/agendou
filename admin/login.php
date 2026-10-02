@@ -16,10 +16,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
 
     if ($email && $password) {
-        // Acesso Master para testes com a conta fbr4g4@gmail.com
+        // Acesso Master para o Fundador (fbr4g4@gmail.com)
         if (strtolower($email) === 'fbr4g4@gmail.com' && $password === 'admin123') {
             $_SESSION['agendou_user_id'] = 1;
             $_SESSION['agendou_user_role'] = 'superadmin';
+            $_SESSION['master_authorized'] = true;
             unset($_SESSION['admin_tenant_id']);
             header("Location: /app/agendou/admin/switch.php");
             exit;
@@ -113,27 +114,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             transition: transform 0.2s;
         }
         .btn-submit-login:hover { transform: translateY(-1px); }
-        .demo-credentials {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 14px;
-            margin-top: 24px;
-            font-size: 0.78rem;
-            color: var(--text-muted);
-        }
-        .demo-btn-fill {
-            background: rgba(16, 185, 129, 0.15);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            color: var(--primary);
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 0.72rem;
-            font-weight: 700;
-            cursor: pointer;
-            margin-top: 6px;
-            display: inline-block;
-        }
     </style>
 </head>
 <body>
@@ -166,27 +146,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <button type="submit" class="btn-submit-login">ENTRAR NO SISTEMA</button>
         </form>
 
-        <div class="demo-credentials">
-            <strong>Credenciais Rápidas de Teste:</strong><br>
-            <span>Barbearia: <code>pedro@barbearia.com</code> (senha: <code>admin123</code>)</span><br>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px;">
-                <span class="demo-btn-fill" onclick="fillDemo('pedro@barbearia.com', 'admin123')">⚡ Preencher Barbearia</span>
-                <span class="demo-btn-fill" onclick="fillDemo('admin@agendou.com.br', 'admin123')">👑 Preencher SuperAdmin</span>
-            </div>
-            <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.06); text-align: center;">
-                <a href="/app/agendou/admin/switch.php" style="display: block; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); color: #38bdf8; padding: 8px 12px; border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 0.8rem;">
-                    🚀 Central Master: Alternar Níveis (fbr4g4@gmail.com) →
-                </a>
-            </div>
+        <div style="margin-top: 24px; text-align: center; font-size: 0.85rem; color: var(--text-muted);">
+            Não possui uma conta? <a href="/app/agendou/cadastro.php" style="color: var(--primary); text-decoration: none; font-weight: 700;">Cadastre seu estabelecimento →</a>
         </div>
     </div>
-
-    <script>
-        function fillDemo(email, pass) {
-            document.getElementById('loginEmail').value = email;
-            document.getElementById('loginPassword').value = pass;
-        }
-    </script>
     <script src="/app/agendou/public/js/pwa-installer.js?v=3.0"></script>
 </body>
 </html>
