@@ -26,8 +26,8 @@ if ($roleParam === 'super' || $roleParam === 'superadmin') {
     exit;
 }
 
-if ($roleParam === 'barber' || $roleParam === 'pedromendes') {
-    // Barbearia Pedro Mendes (Tenant 1) ou outro tenant especificado
+if ($roleParam === 'barber' || $roleParam === 'barbearia1' || $roleParam === 'pedromendes') {
+    // Barbearia 1 (Tenant 1) ou outro tenant especificado
     $targetTenantId = ($tenantParam > 0) ? $tenantParam : 1;
     
     // Buscar usuário do tenant
@@ -194,9 +194,9 @@ if ($currentUserRole === 'superadmin') {
         .btn-access {
             width: 100%;
             border-radius: 12px;
-            padding: 12px 18px;
+            padding: 12px 14px;
             font-weight: 800;
-            font-size: 0.92rem;
+            font-size: 0.88rem;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
@@ -207,6 +207,9 @@ if ($currentUserRole === 'superadmin') {
             cursor: pointer;
             margin-top: 18px;
             box-sizing: border-box;
+            white-space: nowrap;
+            min-height: 48px;
+            height: 48px;
         }
 
         .btn-super { background: linear-gradient(135deg, #facc15, #eab308); color: #000; }
@@ -354,7 +357,7 @@ if ($currentUserRole === 'superadmin') {
 
                     <div>
                         <a href="/app/agendou/admin/switch.php?role=super" class="btn-access btn-super">
-                            <span>⚡ Entrar como Super Admin</span>
+                            <span>⚡ Acessar Super Admin</span>
                         </a>
 
                         <div class="url-chip">
@@ -365,13 +368,13 @@ if ($currentUserRole === 'superadmin') {
                 </div>
             </div>
 
-            <!-- NÍVEL 2: BARBEARIA (PEDRO MENDES) -->
+            <!-- NÍVEL 2: BARBEARIA (BARBEARIA 1) -->
             <div class="col-md-4">
                 <div class="level-card level-barber">
                     <div>
                         <div class="level-icon icon-barber">💈</div>
                         <span style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: var(--primary); letter-spacing: 0.05em;">Nível 2 • Estabelecimento</span>
-                        <h3 style="font-size: 1.25rem; font-weight: 800; color: #fff; margin: 6px 0 10px;">Pedro Mendes</h3>
+                        <h3 style="font-size: 1.25rem; font-weight: 800; color: #fff; margin: 6px 0 10px;">Barbearia 1</h3>
                         <p style="font-size: 0.82rem; color: #94a3b8; line-height: 1.5; margin: 0;">
                             Visão do Barbeiro: dashboard diário, agenda visual, botão de WhatsApp em cada agendamento, serviços e integração com Google Calendar.
                         </p>
