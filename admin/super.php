@@ -487,45 +487,166 @@ require_once __DIR__ . '/header.php';
         </h1>
         <p>Acompanhe o faturamento recorrente (MRR), mensalidades, vencimentos, aplique cortes e configure o sistema.</p>
     </div>
-    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-        <a href="/app/agendou/admin/super.php?action=run_billing_check" class="btn-secondary" style="border-color: rgba(245, 158, 11, 0.4); color: #facc15; font-size: 0.85rem; padding: 10px 16px;" title="Verifica vencimentos e aplica cortes automáticos para quem passou de 2 dias de atraso">
-            <span>⚡ Varredura de Cortes Automáticos</span>
+    <div class="super-actions-header">
+        <a href="/app/agendou/admin/super.php?action=run_billing_check" class="super-btn-action super-btn-amber" title="Verifica vencimentos e aplica cortes automáticos para quem passou de 2 dias de atraso">
+            <span>⚡ Varredura de Cortes</span>
         </a>
-        <button type="button" class="btn-primary" onclick="openNewTenantModal()" style="font-weight: 800; padding: 10px 18px; font-size: 0.88rem;">
-            <span>➕ Cadastrar Nova Barbearia</span>
+        <button type="button" class="super-btn-action super-btn-cyan" onclick="openNewTenantModal()">
+            <span>➕ Nova Barbearia</span>
         </button>
     </div>
 </div>
 
-<!-- ABAS DE NAVEGAÇÃO RÁPIDA (TABS) -->
-<div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 14px;">
-    <a href="/app/agendou/admin/super.php" class="btn-secondary super-tab-btn <?= empty($curTab) ? 'active-tab' : '' ?>" style="font-size: 0.82rem; padding: 8px 16px; text-decoration: none; border-radius: 10px;">
-        📊 Visão Geral & Métricas
+<!-- ABAS DE NAVEGAÇÃO RÁPIDA (SEGMENTED TABS) -->
+<nav class="super-tabs-bar" aria-label="Navegação de Módulos">
+    <a href="/app/agendou/admin/super.php" class="super-tab-item <?= empty($curTab) ? 'active' : '' ?>">
+        <span class="tab-icon">📊</span>
+        <span>Visão Geral</span>
     </a>
-    <a href="/app/agendou/admin/super.php?tab=assinantes#assinantes" class="btn-secondary super-tab-btn <?= $curTab === 'assinantes' ? 'active-tab' : '' ?>" style="font-size: 0.82rem; padding: 8px 16px; text-decoration: none; border-radius: 10px;">
-        🏢 Barbearias & Assinantes (<?= $totalTenants ?>)
+    <a href="/app/agendou/admin/super.php?tab=assinantes#assinantes" class="super-tab-item <?= $curTab === 'assinantes' ? 'active' : '' ?>">
+        <span class="tab-icon">🏢</span>
+        <span>Barbearias (<?= $totalTenants ?>)</span>
     </a>
-    <a href="/app/agendou/admin/super.php?tab=inadimplentes#inadimplentes" class="btn-secondary super-tab-btn <?= $curTab === 'inadimplentes' ? 'active-tab' : '' ?>" style="font-size: 0.82rem; padding: 8px 16px; text-decoration: none; border-radius: 10px; <?= count($inadimplentesList) > 0 ? 'border-color: rgba(239, 68, 68, 0.5); color: #f87171;' : '' ?>">
-        🚫 Inadimplentes & Cortes (<?= count($inadimplentesList) ?>)
+    <a href="/app/agendou/admin/super.php?tab=inadimplentes#inadimplentes" class="super-tab-item <?= $curTab === 'inadimplentes' ? 'active' : '' ?> <?= count($inadimplentesList) > 0 ? 'tab-alert' : '' ?>">
+        <span class="tab-icon">🚫</span>
+        <span>Inadimplentes (<?= count($inadimplentesList) ?>)</span>
     </a>
-    <a href="/app/agendou/admin/super.php?tab=faturas#faturas" class="btn-secondary super-tab-btn <?= $curTab === 'faturas' ? 'active-tab' : '' ?>" style="font-size: 0.82rem; padding: 8px 16px; text-decoration: none; border-radius: 10px;">
-        💳 Histórico de Pagamentos (<?= count($invoices) ?>)
+    <a href="/app/agendou/admin/super.php?tab=faturas#faturas" class="super-tab-item <?= $curTab === 'faturas' ? 'active' : '' ?>">
+        <span class="tab-icon">💳</span>
+        <span>Pagamentos (<?= count($invoices) ?>)</span>
     </a>
-    <a href="/app/agendou/admin/super.php?tab=configuracoes#configuracoes" class="btn-secondary super-tab-btn <?= $curTab === 'configuracoes' ? 'active-tab' : '' ?>" style="font-size: 0.82rem; padding: 8px 16px; text-decoration: none; border-radius: 10px;">
-        ⚙️ Configurações & Chave PIX
+    <a href="/app/agendou/admin/super.php?tab=configuracoes#configuracoes" class="super-tab-item <?= $curTab === 'configuracoes' ? 'active' : '' ?>">
+        <span class="tab-icon">⚙️</span>
+        <span>Configurações & PIX</span>
     </a>
-</div>
+</nav>
 
 <style>
-.super-tab-btn.active-tab {
-    background: var(--primary) !important;
-    color: #000 !important;
-    font-weight: 800 !important;
-    border-color: var(--primary) !important;
+.super-actions-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.super-btn-action {
+    height: 42px;
+    padding: 0 18px;
+    border-radius: 12px;
+    font-size: 0.86rem;
+    font-weight: 800;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    white-space: nowrap;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+.super-btn-amber {
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    color: #facc15;
+}
+.super-btn-amber:hover {
+    background: rgba(245, 158, 11, 0.25);
+    border-color: #facc15;
+    color: #fff;
+    transform: translateY(-1px);
+}
+.super-btn-cyan {
+    background: linear-gradient(135deg, #0ea5e9, #0284c7);
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(14, 165, 233, 0.35);
+}
+.super-btn-cyan:hover {
+    background: linear-gradient(135deg, #38bdf8, #0284c7);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(14, 165, 233, 0.5);
+}
+
+.super-tabs-bar {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 6px;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+.super-tab-item {
+    flex: 1;
+    height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 14px;
+    border-radius: 11px;
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+    box-sizing: border-box;
+}
+.super-tab-item:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+}
+.super-tab-item.active {
+    background: #10b981;
+    color: #022c22 !important;
+    font-weight: 800;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+}
+.super-tab-item.tab-alert {
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.3);
+}
+.super-tab-item.tab-alert.active {
+    background: #ef4444;
+    color: #fff !important;
 }
 .super-section {
     margin-bottom: 30px;
     scroll-margin-top: 80px;
+}
+
+@media (max-width: 900px) {
+    .super-actions-header {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+    .super-btn-action {
+        width: 100%;
+        padding: 0 8px;
+        font-size: 0.78rem;
+    }
+    .super-tabs-bar {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        border-radius: 14px;
+        padding: 5px;
+    }
+    .super-tabs-bar::-webkit-scrollbar {
+        display: none;
+    }
+    .super-tab-item {
+        flex: 0 0 auto;
+        height: 38px;
+        padding: 0 14px;
+        font-size: 0.8rem;
+    }
 }
 </style>
 

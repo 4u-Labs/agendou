@@ -167,8 +167,8 @@ $activeNav = $activeNav ?? 'dashboard';
                                 <a href="/app/agendou/admin/super.php" style="color: #60a5fa; text-decoration: underline; font-weight: 700;">[Voltar ao Painel SaaS]</a>
                             </span>
                         <?php else: ?>
-                            <span class="topbar-badge" style="margin-left: 12px; font-size: 0.75rem; background: rgba(250, 204, 21, 0.15); border: 1px solid rgba(250, 204, 21, 0.4); color: #facc15; padding: 4px 12px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px; font-weight: 700;">
-                                <span>👑 Modo Fundador • Gestão Global da Plataforma</span>
+                            <span class="topbar-badge" style="margin-left: 12px; font-size: 0.75rem; background: rgba(250, 204, 21, 0.15); border: 1px solid rgba(250, 204, 21, 0.4); color: #facc15; padding: 4px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px; font-weight: 700;">
+                                <span>👑 Modo Fundador</span>
                             </span>
                         <?php endif; ?>
                     <?php endif; ?>
@@ -185,11 +185,11 @@ $activeNav = $activeNav ?? 'dashboard';
                     </a>
                     <?php if (($currentUser['role'] ?? '') === 'superadmin'): ?>
                         <a href="/app/agendou/" target="_blank" class="btn-public-link btn-topbar-view" style="border-color: rgba(250, 204, 21, 0.4); color: #facc15;">
-                            <span>🌐 <span class="hide-mobile">Ver Landing Page</span><span class="show-mobile-only">Site</span></span>
+                            <span>🌐 <span class="hide-mobile">Landing Page</span><span class="show-mobile-only">Site</span></span>
                         </a>
                     <?php elseif (!empty($currentTenant['slug'])): ?>
                         <a href="/app/agendou/?slug=<?= urlencode($currentTenant['slug']) ?>" target="_blank" class="btn-public-link btn-topbar-view">
-                            <span>🔗 <span class="hide-mobile">Ver Minha Página</span><span class="show-mobile-only">Página</span></span>
+                            <span>🔗 <span class="hide-mobile">Minha Página</span><span class="show-mobile-only">Página</span></span>
                         </a>
                     <?php endif; ?>
                 </div>

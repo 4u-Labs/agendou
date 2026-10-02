@@ -245,6 +245,18 @@ body {
     color: var(--text-secondary);
     font-weight: 600;
 }
+.topbar-badge {
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    flex-wrap: nowrap;
+}
 
 .btn-public-link {
     background: rgba(16, 185, 129, 0.1);
