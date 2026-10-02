@@ -246,7 +246,11 @@ if ($roleParam === 'viking') {
 }
 
 if ($roleParam === 'client') {
-    header("Location: /app/agendou/?slug=pedromendes&test_client=1");
+    $targetTenantId = ($tenantParam > 0) ? $tenantParam : 1;
+    $stmtSlug = $pdo->prepare("SELECT slug FROM tenants WHERE id = ?");
+    $stmtSlug->execute([$targetTenantId]);
+    $clientSlug = $stmtSlug->fetchColumn() ?: 'barbearia1';
+    header("Location: /app/agendou/?slug=" . urlencode($clientSlug) . "&test_client=1");
     exit;
 }
 
@@ -582,18 +586,18 @@ if ($currentUserRole === 'superadmin') {
                         <span style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: var(--accent); letter-spacing: 0.05em;">Nível 3 • Público</span>
                         <h3 style="font-size: 1.25rem; font-weight: 800; color: #fff; margin: 6px 0 10px;">Cliente Final</h3>
                         <p style="font-size: 0.82rem; color: #94a3b8; line-height: 1.5; margin: 0;">
-                            Visão do Cliente agendando: fluxo público de 4 passos com login Google, lembretes automáticos e botão direto de WhatsApp.
+                            Visão do Cliente agendando na <strong>Barbearia 1</strong>: fluxo público de 4 passos com login Google, lembretes automáticos e botão direto de WhatsApp.
                         </p>
                     </div>
 
                     <div>
-                        <a href="/app/agendou/admin/switch.php?role=client" target="_blank" class="btn-access btn-client">
+                        <a href="/app/agendou/admin/switch.php?role=client&tenant=1" target="_blank" class="btn-access btn-client">
                             <span>⚡ Testar como Cliente</span>
                         </a>
 
                         <div class="url-chip">
-                            <span>4u.ia.br/pedromendes</span>
-                            <button class="btn-copy-chip" onclick="copyLink('https://4u.ia.br/pedromendes')" title="Copiar"><i class="far fa-copy"></i></button>
+                            <span>4u.ia.br/barbearia1</span>
+                            <button class="btn-copy-chip" onclick="copyLink('https://4u.ia.br/barbearia1')" title="Copiar"><i class="far fa-copy"></i></button>
                         </div>
                     </div>
                 </div>
@@ -623,9 +627,14 @@ if ($currentUserRole === 'superadmin') {
                                     <span class="badge bg-dark border border-secondary text-light" style="font-size: 0.7rem;">Plano <?= strtoupper($t['plan']) ?></span>
                                 </td>
                                 <td style="padding: 12px 8px; vertical-align: middle; text-align: right;">
-                                    <a href="/app/agendou/admin/switch.php?role=barber&tenant=<?= $t['id'] ?>" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1" style="font-weight: 700; font-size: 0.75rem;">
-                                        👁️ Acessar como <?= htmlspecialchars($t['name']) ?>
-                                    </a>
+                                    <div style="display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap;">
+                                        <a href="/app/agendou/admin/switch.php?role=client&tenant=<?= $t['id'] ?>" target="_blank" class="btn btn-sm btn-outline-info rounded-pill px-3 py-1" style="font-weight: 700; font-size: 0.75rem;">
+                                            ✂️ Testar Agendamento
+                                        </a>
+                                        <a href="/app/agendou/admin/switch.php?role=barber&tenant=<?= $t['id'] ?>" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1" style="font-weight: 700; font-size: 0.75rem;">
+                                            👁️ Painel Admin
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
