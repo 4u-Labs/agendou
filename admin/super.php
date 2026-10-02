@@ -287,6 +287,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action']) && 
 
                 $pdo->commit();
 
+                // Gerar Link Curto Oficial (ex: 4u.ia.br/{slug})
+                require_once __DIR__ . '/../app/Services/UrlShortenerService.php';
+                UrlShortenerService::ensureTenantShortLink(['name' => $name, 'slug' => $cleanSlug]);
+
                 header("Location: /app/agendou/admin/super.php?tab=assinantes&created=1&new_name=" . urlencode($name) . "&new_login=" . urlencode($adminEmail) . "&new_pass=" . urlencode($adminPassword) . "#assinantes");
                 exit;
 
@@ -713,9 +717,12 @@ require_once __DIR__ . '/header.php';
                         <td>
                             <strong style="color: #fff; font-size: 0.95rem;"><?= htmlspecialchars($t['name']) ?></strong><br>
                             <span style="font-size: 0.75rem; color: var(--text-muted);"><?= htmlspecialchars($t['category'] ?? 'Barbearia') ?> • <?= htmlspecialchars($t['city'] ?: '--') ?>/<?= htmlspecialchars($t['state'] ?: '--') ?></span>
-                            <div style="margin-top: 4px;">
-                                <a href="/app/agendou/?slug=<?= urlencode($t['slug']) ?>" target="_blank" style="font-size: 0.7rem; color: var(--cyan); text-decoration: none;">
-                                    🔗 Link Público do Cliente →
+                            <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 3px;">
+                                <a href="/<?= urlencode($t['slug']) ?>" target="_blank" style="font-size: 0.74rem; color: #facc15; text-decoration: none; font-weight: 700;" title="Link Curto de Divulgação">
+                                    👉 4u.ia.br/<?= htmlspecialchars($t['slug']) ?>
+                                </a>
+                                <a href="/app/agendou/?slug=<?= urlencode($t['slug']) ?>" target="_blank" style="font-size: 0.68rem; color: var(--cyan); text-decoration: none;">
+                                    🔗 Link do App →
                                 </a>
                             </div>
                         </td>

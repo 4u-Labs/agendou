@@ -108,6 +108,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $pdo->commit();
 
+                // Gerar Link Curto Oficial (ex: 4u.ia.br/{slug})
+                require_once __DIR__ . '/app/Services/UrlShortenerService.php';
+                UrlShortenerService::ensureTenantShortLink(['name' => $businessName, 'slug' => $baseSlug]);
+
                 // Auto login
                 $_SESSION['agendou_user_id'] = $newUserId;
                 $_SESSION['agendou_user_role'] = 'tenant_admin';

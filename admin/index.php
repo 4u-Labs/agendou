@@ -185,6 +185,12 @@ $stmtG = $pdo->prepare("SELECT * FROM google_integrations WHERE tenant_id = ?");
 $stmtG->execute([$tenantId]);
 $googleIntegration = $stmtG->fetch();
 $isGoogleConnected = $googleIntegration && !empty($googleIntegration['access_token']) && $googleIntegration['sync_enabled'];
+
+// 6. Link Curto Oficial do Estabelecimento
+require_once __DIR__ . '/../app/Services/UrlShortenerService.php';
+$shortLinkUrl = UrlShortenerService::ensureTenantShortLink($currentTenant);
+$shortStats = UrlShortenerService::getStats($currentTenant['slug']);
+$shortClicks = (int)($shortStats['link']['clicks'] ?? 0);
 ?>
 
 <div class="content-header" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
@@ -199,9 +205,43 @@ $isGoogleConnected = $googleIntegration && !empty($googleIntegration['access_tok
         <a href="/app/agendou/admin/agenda.php" class="btn-secondary" style="font-weight: 600; padding: 10px 16px;">
             📅 Ver Grade Semanal
         </a>
-        <a href="/app/agendou/?slug=<?= urlencode($currentTenant['slug']) ?>" target="_blank" class="btn-emerald" style="padding: 10px 16px; font-weight: 600;">
-            <span>🌐 Link Público do Cliente</span>
+        <a href="<?= htmlspecialchars($shortLinkUrl) ?>" target="_blank" class="btn-emerald" style="padding: 10px 16px; font-weight: 700;" title="Abrir link de agendamento">
+            <span>👉 4u.ia.br/<?= htmlspecialchars($currentTenant['slug']) ?></span>
         </a>
+    </div>
+</div>
+
+<!-- BANNER DO LINK CURTO OFICIAL DE DIVULGAÇÃO -->
+<div class="card-box" style="margin-bottom: 24px; padding: 20px 24px; background: linear-gradient(135deg, rgba(250, 204, 21, 0.05), rgba(16, 185, 129, 0.05)); border: 1px solid rgba(250, 204, 21, 0.3);">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                <span style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; background: rgba(250, 204, 21, 0.15); color: #facc15; padding: 2px 8px; border-radius: 6px;">
+                    ⚡ Link Curto Oficial de Divulgação
+                </span>
+                <span style="font-size: 0.72rem; color: var(--text-muted);">Ideal para Bio do Instagram, Cartão e WhatsApp</span>
+            </div>
+            <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;">
+                <a href="<?= htmlspecialchars($shortLinkUrl) ?>" target="_blank" style="font-size: 1.4rem; font-weight: 900; color: #fff; text-decoration: none; letter-spacing: -0.02em;">
+                    👉 <?= htmlspecialchars(str_replace('https://', '', $shortLinkUrl)) ?>
+                </a>
+                <span style="font-size: 0.8rem; color: var(--text-secondary); background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 20px;">
+                    👁️ <strong><?= $shortClicks ?></strong> clique(s) de clientes
+                </span>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <button type="button" class="btn-primary" onclick="navigator.clipboard.writeText('<?= addslashes($shortLinkUrl) ?>').then(()=>alert('Link curto copiado com sucesso!'));" style="padding: 10px 16px; font-weight: 800; font-size: 0.82rem;">
+                📋 Copiar Link Curto
+            </button>
+            <a href="https://wa.me/?text=<?= urlencode("Olá! Agende seu horário na *" . $currentTenant['name'] . "* pelo nosso link rápido: " . $shortLinkUrl) ?>" target="_blank" class="btn-emerald" style="padding: 10px 16px; font-weight: 800; font-size: 0.82rem;" title="Divulgar no WhatsApp">
+                📱 Compartilhar no WhatsApp
+            </a>
+            <a href="/links.php?qr=<?= urlencode($currentTenant['slug']) ?>" target="_blank" class="btn-secondary" style="padding: 10px 14px; font-size: 0.82rem; font-weight: 700; color: #facc15;" title="Baixar QR Code de balcão">
+                🖼️ QR Code de Balcão
+            </a>
+        </div>
     </div>
 </div>
 

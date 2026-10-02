@@ -34,13 +34,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
             ");
             $stmtUp->execute([$name, $slug, $whatsapp, $category, $address, $city, $state, $description, $tenantId]);
             $msg = 'Configurações atualizadas com sucesso!';
-            // Refresh tenant
+            // Refresh tenant e atualizar link curto
             $currentTenant = $pdo->query("SELECT * FROM tenants WHERE id = $tenantId")->fetch();
+            require_once __DIR__ . '/../app/Services/UrlShortenerService.php';
+            UrlShortenerService::ensureTenantShortLink($currentTenant);
         }
     }
 }
 
-$publicUrl = "https://4u.ia.br/app/agendou/?slug=" . urlencode($currentTenant['slug']);
+require_once __DIR__ . '/../app/Services/UrlShortenerService.php';
+$shortLinkUrl = UrlShortenerService::ensureTenantShortLink($currentTenant);
+$publicUrl = $shortLinkUrl;
 $qrCodeApiUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" . urlencode($publicUrl);
 ?>
 
