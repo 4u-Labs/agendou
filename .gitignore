@@ -1,0 +1,10 @@
+# Security: Never commit sensitive credentials or live databases
+.env
+database/*.sqlite
+database/*.sqlite-wal
+database/*.sqlite-shm
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+*.log

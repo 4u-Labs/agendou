@@ -1,0 +1,21 @@
+{
+  "name": "AGENDOU - Agendamento Online",
+  "short_name": "AGENDOU",
+  "description": "Plataforma de agendamento online e sincronização com Google Calendar",
+  "start_url": "/app/agendou/",
+  "display": "standalone",
+  "background_color": "#050709",
+  "theme_color": "#10b981",
+  "icons": [
+    {
+      "src": "/loja/favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/loja/favicon-32x32.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
