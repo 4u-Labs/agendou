@@ -14,15 +14,78 @@ $pdo = Database::getConnection();
 $today = date('Y-m-d');
 $manualErr = '';
 
-// Handle POST actions (complete, cancel, manual_appointment)
+// Handle POST actions (complete, adjust_appointment, cancel, manual_appointment)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
     $action = $_POST['action'];
 
-    if ($action === 'complete') {
+    if ($action === 'complete' || $action === 'adjust_appointment') {
         $apptId = (int)($_POST['appointment_id'] ?? 0);
+        $basePrice = (float)str_replace(',', '.', $_POST['base_price'] ?? 0);
+        $priceAdjustment = (float)str_replace(',', '.', $_POST['price_adjustment'] ?? 0);
+        $adjReason = trim($_POST['adjustment_reason'] ?? '');
+        $paymentMethod = trim($_POST['payment_method'] ?? 'pix');
+        
+        $finalPrice = ($paymentMethod === 'pacote') ? 0.00 : max(0, $basePrice + $priceAdjustment);
+
         if ($apptId) {
-            $stmt = $pdo->prepare("UPDATE appointments SET status = 'completed' WHERE id = ? AND tenant_id = ?");
-            $stmt->execute([$apptId, $tenantId]);
+            $pdo->beginTransaction();
+
+            $stmt = $pdo->prepare("
+                UPDATE appointments 
+                SET status = 'completed',
+                    price_adjustment = ?,
+                    adjustment_reason = ?,
+                    final_price = ?,
+                    payment_method = ?,
+                    paid_at = CURRENT_TIMESTAMP
+                WHERE id = ? AND tenant_id = ?
+            ");
+            $stmt->execute([$priceAdjustment, $adjReason, $finalPrice, $paymentMethod, $apptId, $tenantId]);
+
+            // Detalhes do atendimento para vincular cliente, barbeiro e descrição
+            $stmtD = $pdo->prepare("
+                SELECT a.*, s.name as service_name, c.name as customer_name, p.name as professional_name
+                FROM appointments a
+                JOIN services s ON s.id = a.service_id
+                JOIN customers c ON c.id = a.customer_id
+                JOIN professionals p ON p.id = a.professional_id
+                WHERE a.id = ? AND a.tenant_id = ?
+            ");
+            $stmtD->execute([$apptId, $tenantId]);
+            $appt = $stmtD->fetch();
+
+            if ($appt) {
+                $stmtCheckT = $pdo->prepare("SELECT id FROM financial_transactions WHERE appointment_id = ? AND tenant_id = ?");
+                $stmtCheckT->execute([$apptId, $tenantId]);
+                $existingTransId = $stmtCheckT->fetchColumn();
+
+                $desc = "Atendimento: " . $appt['service_name'] . " - " . $appt['customer_name'];
+                if (!empty($adjReason)) {
+                    $desc .= " (" . ($priceAdjustment >= 0 ? "+" : "") . number_format($priceAdjustment, 2, ',', '.') . " " . $adjReason . ")";
+                }
+
+                if ($existingTransId) {
+                    $stmtUT = $pdo->prepare("
+                        UPDATE financial_transactions
+                        SET amount = ?, payment_method = ?, description = ?, professional_id = ?
+                        WHERE id = ? AND tenant_id = ?
+                    ");
+                    $stmtUT->execute([$finalPrice, $paymentMethod, $desc, $appt['professional_id'], $existingTransId, $tenantId]);
+                } else {
+                    $stmtIT = $pdo->prepare("
+                        INSERT INTO financial_transactions (
+                            tenant_id, appointment_id, customer_id, professional_id,
+                            type, description, amount, payment_method, transaction_date, created_at
+                        ) VALUES (?, ?, ?, ?, 'appointment', ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    ");
+                    $stmtIT->execute([
+                        $tenantId, $apptId, $appt['customer_id'], $appt['professional_id'],
+                        $desc, $finalPrice, $paymentMethod, $appt['appointment_date']
+                    ]);
+                }
+            }
+
+            $pdo->commit();
         }
         header("Location: /app/agendou/admin/index.php?updated=1");
         exit;
@@ -35,6 +98,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
 
             $stmt = $pdo->prepare("UPDATE appointments SET status = 'cancelled', cancelled_at = CURRENT_TIMESTAMP WHERE id = ? AND tenant_id = ?");
             $stmt->execute([$apptId, $tenantId]);
+
+            // Remove transação financeira correspondente se houver
+            $stmtDT = $pdo->prepare("DELETE FROM financial_transactions WHERE appointment_id = ? AND tenant_id = ?");
+            $stmtDT->execute([$apptId, $tenantId]);
 
             if ($gEventId) {
                 GoogleCalendarService::deleteEvent($tenantId, $gEventId);
@@ -151,6 +218,32 @@ $stmtToday = $pdo->prepare("
 ");
 $stmtToday->execute([$tenantId, $today]);
 $metricsToday = $stmtToday->fetch() ?: [];
+
+// 1.1 Métricas Financeiras Reais do Caixa
+$stmtRealToday = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM financial_transactions WHERE tenant_id = ? AND transaction_date = ? AND amount > 0");
+$stmtRealToday->execute([$tenantId, $today]);
+$realIncomeToday = (float)$stmtRealToday->fetchColumn();
+
+$stmtRealMonth = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM financial_transactions WHERE tenant_id = ? AND transaction_date LIKE ? AND amount > 0");
+$stmtRealMonth->execute([$tenantId, date('Y-m') . '%']);
+$realIncomeMonth = (float)$stmtRealMonth->fetchColumn();
+
+$stmtRealTotal = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM financial_transactions WHERE tenant_id = ? AND amount > 0");
+$stmtRealTotal->execute([$tenantId]);
+$realIncomeTotal = (float)$stmtRealTotal->fetchColumn();
+
+// 1.2 Mapear Clientes com Pacotes / Clubes Ativos
+$stmtActivePackages = $pdo->prepare("
+    SELECT cp.customer_id, p.name as package_name, cp.end_date
+    FROM customer_packages cp
+    JOIN packages p ON p.id = cp.package_id
+    WHERE cp.tenant_id = ? AND cp.status = 'active' AND cp.end_date >= ?
+");
+$stmtActivePackages->execute([$tenantId, $today]);
+$customerPackagesMap = [];
+foreach ($stmtActivePackages->fetchAll() as $row) {
+    $customerPackagesMap[$row['customer_id']] = $row['package_name'];
+}
 
 // 2. Total Customers
 $stmtCust = $pdo->prepare("SELECT COUNT(*) FROM customers WHERE tenant_id = ?");
@@ -291,49 +384,53 @@ $shortClicks = (int)($shortStats['link']['clicks'] ?? 0);
 <div class="metrics-row">
     <div class="metric-box">
         <div class="metric-box-header">
-            <span>Agendamentos Hoje</span>
+            <span>Faturado Hoje</span>
+            <span style="color: var(--primary);">💵</span>
+        </div>
+        <div class="metric-big-val" style="color: var(--primary);">
+            R$ <?= number_format($realIncomeToday, 2, ',', '.') ?>
+        </div>
+        <div class="metric-sub"><a href="/app/agendou/admin/financeiro.php?period=today" style="color: var(--primary); text-decoration: none;">Ver extrato do dia →</a></div>
+    </div>
+
+    <div class="metric-box">
+        <div class="metric-box-header">
+            <span>Faturado no Mês</span>
+            <span style="color: #facc15;">📅</span>
+        </div>
+        <div class="metric-big-val" style="color: #facc15;">
+            R$ <?= number_format($realIncomeMonth, 2, ',', '.') ?>
+        </div>
+        <div class="metric-sub"><a href="/app/agendou/admin/financeiro.php?period=month" style="color: #facc15; text-decoration: none;">Ver faturamento mensal →</a></div>
+    </div>
+
+    <div class="metric-box">
+        <div class="metric-box-header">
+            <span>Acumulado Total</span>
+            <span style="color: #38bdf8;">📈</span>
+        </div>
+        <div class="metric-big-val" style="color: #38bdf8;">
+            R$ <?= number_format($realIncomeTotal, 2, ',', '.') ?>
+        </div>
+        <div class="metric-sub"><a href="/app/agendou/admin/financeiro.php?period=all" style="color: #38bdf8; text-decoration: none;">Histórico acumulado →</a></div>
+    </div>
+
+    <div class="metric-box">
+        <div class="metric-box-header">
+            <span>Atendimentos Hoje</span>
             <span>📅</span>
         </div>
         <div class="metric-big-val"><?= (int)($metricsToday['total_today'] ?? 0) ?></div>
-        <div class="metric-sub">Atendimentos marcados para hoje</div>
+        <div class="metric-sub"><?= (int)($metricsToday['confirmed_today'] ?? 0) ?> aguardando • <?= (int)($metricsToday['completed_today'] ?? 0) ?> concluídos</div>
     </div>
 
     <div class="metric-box">
         <div class="metric-box-header">
-            <span>Confirmados</span>
-            <span style="color: var(--primary);">✓</span>
-        </div>
-        <div class="metric-big-val" style="color: var(--primary);"><?= (int)($metricsToday['confirmed_today'] ?? 0) ?></div>
-        <div class="metric-sub">Aguardando atendimento</div>
-    </div>
-
-    <div class="metric-box">
-        <div class="metric-box-header">
-            <span>Faturamento Estimado</span>
-            <span style="color: #facc15;">💰</span>
-        </div>
-        <div class="metric-big-val" style="color: #facc15;">
-            R$ <?= number_format((float)($metricsToday['revenue_today'] ?? 0), 2, ',', '.') ?>
-        </div>
-        <div class="metric-sub">Previsão para o dia de hoje</div>
-    </div>
-
-    <div class="metric-box">
-        <div class="metric-box-header">
-            <span>Cancelados / Faltas</span>
-            <span style="color: var(--red);">✕</span>
-        </div>
-        <div class="metric-big-val" style="color: var(--red);"><?= (int)($metricsToday['cancelled_today'] ?? 0) ?></div>
-        <div class="metric-sub">Horários liberados</div>
-    </div>
-
-    <div class="metric-box">
-        <div class="metric-box-header">
-            <span>Base de Clientes</span>
-            <span>👥</span>
+            <span>Clientes & Clubes</span>
+            <span style="color: #a855f7;">👑</span>
         </div>
         <div class="metric-big-val"><?= $totalCustomers ?></div>
-        <div class="metric-sub">Clientes cadastrados</div>
+        <div class="metric-sub"><a href="/app/agendou/admin/pacotes.php" style="color: #a855f7; text-decoration: none;"><?= count($customerPackagesMap) ?> assinantes ativos →</a></div>
     </div>
 </div>
 
@@ -342,7 +439,7 @@ $shortClicks = (int)($shortStats['link']['clicks'] ?? 0);
     <div class="card-box-header" style="display: flex; justify-content: space-between; align-items: center;">
         <div>
             <h2>Próximos Atendimentos</h2>
-            <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">Clique no botão WhatsApp para enviar a confirmação pronta para o cliente.</p>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">Clique em <strong>✓ Concluir</strong> para lançar o valor no caixa, registrar acréscimos (ex: pomada) ou descontos.</p>
         </div>
         <span style="font-size: 0.8rem; color: var(--text-muted); font-family: var(--font-mono);">Hoje: <?= date('d/m/Y') ?></span>
     </div>
@@ -392,6 +489,11 @@ $shortClicks = (int)($shortStats['link']['clicks'] ?? 0);
                             </td>
                             <td>
                                 <strong><?= htmlspecialchars($a['customer_name']) ?></strong>
+                                <?php if (isset($customerPackagesMap[$a['customer_id']])): ?>
+                                    <div style="font-size: 0.68rem; color: #a855f7; font-weight: 700; margin-top: 2px;">
+                                        👑 Assinante: <?= htmlspecialchars($customerPackagesMap[$a['customer_id']]) ?>
+                                    </div>
+                                <?php endif; ?>
                                 <?php if (!empty($a['customer_email'])): ?>
                                     <div style="font-size: 0.72rem; color: var(--text-muted);"><?= htmlspecialchars($a['customer_email']) ?></div>
                                 <?php endif; ?>
@@ -404,7 +506,21 @@ $shortClicks = (int)($shortStats['link']['clicks'] ?? 0);
                             </td>
                             <td><?= htmlspecialchars($a['service_name']) ?></td>
                             <td><?= htmlspecialchars($a['professional_name']) ?></td>
-                            <td><strong style="color: var(--primary);">R$ <?= number_format($a['price'], 2, ',', '.') ?></strong></td>
+                            <td>
+                                <strong style="color: var(--primary); font-family: var(--font-mono);">
+                                    R$ <?= number_format((float)($a['final_price'] ?? $a['price']), 2, ',', '.') ?>
+                                </strong>
+                                <?php if (!empty($a['price_adjustment']) && (float)$a['price_adjustment'] != 0): ?>
+                                    <div style="font-size: 0.68rem; color: <?= (float)$a['price_adjustment'] > 0 ? '#38bdf8' : '#f59e0b' ?>;">
+                                        <?= (float)$a['price_adjustment'] > 0 ? '+' : '' ?>R$ <?= number_format((float)$a['price_adjustment'], 2, ',', '.') ?> (<?= htmlspecialchars($a['adjustment_reason'] ?: 'ajuste') ?>)
+                                    </div>
+                                <?php endif; ?>
+                                <?php if ($a['status'] === 'completed' && !empty($a['payment_method'])): ?>
+                                    <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">
+                                        <?= htmlspecialchars($a['payment_method']) ?>
+                                    </div>
+                                <?php endif; ?>
+                            </td>
                             <td>
                                 <?php if ($a['status'] === 'confirmed'): ?>
                                     <span class="badge-status badge-confirmed">✓ Confirmado</span>
@@ -425,16 +541,44 @@ $shortClicks = (int)($shortStats['link']['clicks'] ?? 0);
                             <td>
                                 <?php if ($a['status'] === 'confirmed'): ?>
                                     <div style="display: flex; gap: 6px;">
-                                        <form method="POST" style="display: inline;">
-                                            <input type="hidden" name="appointment_id" value="<?= $a['id'] ?>">
-                                            <input type="hidden" name="action" value="complete">
-                                            <button type="submit" class="btn-secondary" style="padding: 5px 10px; font-size: 0.72rem; color: var(--primary);" title="Marcar como Concluído">✓ Concluir</button>
-                                        </form>
+                                        <button type="button" class="btn-emerald" style="padding: 5px 10px; font-size: 0.72rem; font-weight: 700;" onclick='openCompleteModal(<?= htmlspecialchars(json_encode([
+                                            'id' => (int)$a['id'],
+                                            'customer_name' => $a['customer_name'],
+                                            'service_name' => $a['service_name'],
+                                            'professional_name' => $a['professional_name'],
+                                            'base_price' => (float)$a['price'],
+                                            'price_adjustment' => (float)($a['price_adjustment'] ?? 0),
+                                            'adjustment_reason' => $a['adjustment_reason'] ?? '',
+                                            'final_price' => (float)($a['final_price'] ?? $a['price']),
+                                            'payment_method' => $a['payment_method'] ?: 'pix',
+                                            'has_package' => isset($customerPackagesMap[$a['customer_id']]),
+                                            'package_name' => $customerPackagesMap[$a['customer_id']] ?? ''
+                                        ]), ENT_QUOTES, "UTF-8") ?>)' title="Concluir Atendimento e Lançar no Caixa">
+                                            ✓ Concluir
+                                        </button>
                                         <form method="POST" style="display: inline;" onsubmit="return confirm('Deseja realmente cancelar este agendamento?');">
                                             <input type="hidden" name="appointment_id" value="<?= $a['id'] ?>">
                                             <input type="hidden" name="action" value="cancel">
                                             <button type="submit" class="btn-secondary" style="padding: 5px 10px; font-size: 0.72rem; color: var(--red);" title="Cancelar Agendamento">✕</button>
                                         </form>
+                                    </div>
+                                <?php elseif ($a['status'] === 'completed'): ?>
+                                    <div style="display: flex; gap: 6px; align-items: center;">
+                                        <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 0.7rem; color: #facc15;" onclick='openCompleteModal(<?= htmlspecialchars(json_encode([
+                                            'id' => (int)$a['id'],
+                                            'customer_name' => $a['customer_name'],
+                                            'service_name' => $a['service_name'],
+                                            'professional_name' => $a['professional_name'],
+                                            'base_price' => (float)$a['price'],
+                                            'price_adjustment' => (float)($a['price_adjustment'] ?? 0),
+                                            'adjustment_reason' => $a['adjustment_reason'] ?? '',
+                                            'final_price' => (float)($a['final_price'] ?? $a['price']),
+                                            'payment_method' => $a['payment_method'] ?: 'pix',
+                                            'has_package' => isset($customerPackagesMap[$a['customer_id']]),
+                                            'package_name' => $customerPackagesMap[$a['customer_id']] ?? ''
+                                        ]), ENT_QUOTES, "UTF-8") ?>)' title="Editar valores, acréscimos ou forma de pagamento">
+                                            ✏️ Ajustar
+                                        </button>
                                     </div>
                                 <?php else: ?>
                                     <span style="color: var(--text-muted); font-size: 0.75rem;">--</span>
@@ -521,6 +665,101 @@ $shortClicks = (int)($shortStats['link']['clicks'] ?? 0);
     </div>
 </div>
 
+<!-- MODAL CONCLUIR / AJUSTAR ATENDIMENTO & LANÇAR NO CAIXA -->
+<div id="modalCompleteApp" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 20px; width: 100%; max-width: 500px; padding: 28px; box-shadow: 0 25px 50px rgba(0,0,0,0.8);">
+        
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; border-bottom: 1px solid var(--border-color); padding-bottom: 14px;">
+            <div>
+                <h2 style="font-size: 1.25rem; color: #fff; margin-bottom: 4px;">✓ Concluir / Ajustar Atendimento</h2>
+                <p style="font-size: 0.8rem; color: var(--text-muted);">Confirme os valores, acréscimos ou descontos para o Caixa.</p>
+            </div>
+            <button type="button" onclick="closeCompleteModal()" style="background: none; border: none; color: var(--text-muted); font-size: 22px; cursor: pointer;">✕</button>
+        </div>
+
+        <form method="POST" action="/app/agendou/admin/index.php" id="formCompleteApp">
+            <input type="hidden" name="action" value="complete">
+            <input type="hidden" name="appointment_id" id="cmpApptId" value="0">
+            <input type="hidden" name="base_price" id="cmpBasePriceHidden" value="0">
+
+            <!-- Banner Informativo do Atendimento -->
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">Cliente:</span>
+                    <strong style="color: #fff; font-size: 0.9rem;" id="cmpCustomerName">--</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">Serviço:</span>
+                    <span style="color: #fff; font-size: 0.85rem;" id="cmpServiceName">--</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">Valor Base do Serviço:</span>
+                    <strong style="color: var(--primary); font-family: var(--font-mono); font-size: 0.95rem;" id="cmpBasePriceDisplay">R$ 0,00</strong>
+                </div>
+            </div>
+
+            <!-- Banner se cliente tiver pacote ativo -->
+            <div id="cmpPackageBanner" style="display: none; background: rgba(168, 85, 247, 0.12); border: 1px solid rgba(168, 85, 247, 0.35); border-radius: 10px; padding: 12px; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <div>
+                        <span style="font-size: 0.72rem; font-weight: 800; color: #c084fc; text-transform: uppercase; display: block;">👑 Assinante de Clube</span>
+                        <span style="font-size: 0.82rem; color: #fff;" id="cmpPackageName">Plano Ativo</span>
+                    </div>
+                    <button type="button" class="btn-primary" onclick="usePackagePayment()" style="padding: 5px 10px; font-size: 0.75rem; font-weight: 800;">
+                        Cobrir pelo Pacote (R$ 0,00)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Campos de Ajuste (+/-) e Motivo -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+                <div>
+                    <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 4px;">
+                        Ajuste (+ ou - R$)
+                    </label>
+                    <input type="text" name="price_adjustment" id="cmpAdjustment" value="0,00" oninput="recalcCompleteTotal()" class="form-input" placeholder="+15,00 ou -5,00" style="width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px 14px; color: #fff; font-family: var(--font-mono);">
+                    <span style="font-size: 0.68rem; color: var(--text-muted); display: block; margin-top: 3px;">Ex: +15 (pomada) ou -5 (desconto)</span>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 4px;">
+                        Motivo do Ajuste
+                    </label>
+                    <input type="text" name="adjustment_reason" id="cmpReason" class="form-input" placeholder="Ex: Pomada matte, desconto..." style="width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px 14px; color: #fff;">
+                </div>
+            </div>
+
+            <!-- Forma de Pagamento -->
+            <div style="margin-bottom: 18px;">
+                <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 4px;">Forma de Pagamento *</label>
+                <select name="payment_method" id="cmpPaymentMethod" onchange="onPaymentMethodChange()" required class="form-input" style="width: 100%; background: #18181b; border: 1px solid var(--border-color); border-radius: 10px; padding: 10px 14px; color: #fff;">
+                    <option value="pix">⚡ PIX</option>
+                    <option value="dinheiro">💵 Dinheiro</option>
+                    <option value="cartao_credito">💳 Cartão de Crédito</option>
+                    <option value="cartao_debito">💳 Cartão de Débito</option>
+                    <option value="pacote">📦 Pacote / Clube de Assinatura (R$ 0,00)</option>
+                    <option value="outro">🔄 Outro</option>
+                </select>
+            </div>
+
+            <!-- Total Final Grande em Destaque -->
+            <div style="background: rgba(250, 204, 21, 0.08); border: 1px solid rgba(250, 204, 21, 0.3); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); display: block;">Valor Final a Lançar no Caixa:</span>
+                    <span style="font-size: 0.72rem; color: var(--text-secondary);" id="cmpMathFormula">R$ 0,00 + R$ 0,00</span>
+                </div>
+                <div>
+                    <span id="cmpFinalDisplay" style="font-size: 1.7rem; font-weight: 900; font-family: var(--font-mono); color: #facc15;">R$ 0,00</span>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="closeCompleteModal()" class="btn-secondary" style="padding: 10px 18px;">Cancelar</button>
+                <button type="submit" class="btn-emerald" style="padding: 10px 24px; font-weight: 800;">✓ Confirmar Recebimento</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 function openManualModal() {
     document.getElementById('modalManualApp').style.display = 'flex';
@@ -528,8 +767,80 @@ function openManualModal() {
 function closeManualModal() {
     document.getElementById('modalManualApp').style.display = 'none';
 }
+
+// Modal Concluir / Ajustar
+let currentCompleteData = null;
+
+function openCompleteModal(data) {
+    currentCompleteData = data;
+    document.getElementById('cmpApptId').value = data.id;
+    document.getElementById('cmpBasePriceHidden').value = data.base_price;
+    document.getElementById('cmpCustomerName').textContent = data.customer_name;
+    document.getElementById('cmpServiceName').textContent = data.service_name + ' (' + data.professional_name + ')';
+    document.getElementById('cmpBasePriceDisplay').textContent = 'R$ ' + Number(data.base_price).toFixed(2).replace('.', ',');
+    
+    // Ajustes
+    const adjInput = document.getElementById('cmpAdjustment');
+    adjInput.value = data.price_adjustment ? Number(data.price_adjustment).toFixed(2).replace('.', ',') : '0,00';
+    document.getElementById('cmpReason').value = data.adjustment_reason || '';
+    
+    // Forma de Pagamento
+    const methodSel = document.getElementById('cmpPaymentMethod');
+    methodSel.value = data.payment_method || 'pix';
+
+    // Banner de Pacote
+    const pkgBanner = document.getElementById('cmpPackageBanner');
+    if (data.has_package) {
+        pkgBanner.style.display = 'block';
+        document.getElementById('cmpPackageName').textContent = data.package_name;
+    } else {
+        pkgBanner.style.display = 'none';
+    }
+
+    recalcCompleteTotal();
+    document.getElementById('modalCompleteApp').style.display = 'flex';
+}
+
+function closeCompleteModal() {
+    document.getElementById('modalCompleteApp').style.display = 'none';
+}
+
+function usePackagePayment() {
+    document.getElementById('cmpPaymentMethod').value = 'pacote';
+    document.getElementById('cmpAdjustment').value = '0,00';
+    document.getElementById('cmpReason').value = 'Cobberto por ' + (currentCompleteData ? currentCompleteData.package_name : 'Pacote');
+    recalcCompleteTotal();
+}
+
+function onPaymentMethodChange() {
+    recalcCompleteTotal();
+}
+
+function recalcCompleteTotal() {
+    if (!currentCompleteData) return;
+    const base = parseFloat(currentCompleteData.base_price) || 0;
+    const adjStr = document.getElementById('cmpAdjustment').value.replace(',', '.');
+    const adj = parseFloat(adjStr) || 0;
+    const method = document.getElementById('cmpPaymentMethod').value;
+
+    let final = 0;
+    if (method === 'pacote') {
+        final = 0;
+        document.getElementById('cmpMathFormula').textContent = 'Coberto pelo Clube/Pacote (R$ 0,00)';
+    } else {
+        final = Math.max(0, base + adj);
+        const adjSign = adj >= 0 ? '+ R$ ' : '- R$ ';
+        document.getElementById('cmpMathFormula').textContent = 'R$ ' + base.toFixed(2).replace('.', ',') + ' ' + adjSign + Math.abs(adj).toFixed(2).replace('.', ',');
+    }
+
+    document.getElementById('cmpFinalDisplay').textContent = 'R$ ' + final.toFixed(2).replace('.', ',');
+}
+
 window.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeManualModal();
+    if (e.key === 'Escape') {
+        closeManualModal();
+        closeCompleteModal();
+    }
 });
 </script>
 

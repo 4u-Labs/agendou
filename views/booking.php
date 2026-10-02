@@ -25,7 +25,15 @@ $googleClientId = $config['google']['client_id'];
     <meta property="og:description" content="Escolha seu serviço, profissional e horário em menos de 1 minuto."/>
     <meta property="og:type" content="business.business"/>
     
-    <link rel="icon" type="image/png" href="/loja/favicon-32x32.png"/>
+    <link rel="icon" type="image/png" sizes="32x32" href="/app/agendou/public/icons/favicon-32x32.png"/>
+    <link rel="icon" type="image/png" sizes="16x16" href="/app/agendou/public/icons/favicon-16x16.png"/>
+    <link rel="apple-touch-icon" href="/app/agendou/public/icons/apple-touch-icon.png"/>
+    <link rel="shortcut icon" href="/app/agendou/public/icons/favicon.ico"/>
+    <link rel="manifest" href="/app/agendou/manifest.json"/>
+    <meta name="theme-color" content="#0284c7"/>
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+    <meta name="apple-mobile-web-app-title" content="AGENDOU!!"/>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -36,6 +44,17 @@ $googleClientId = $config['google']['client_id'];
 </head>
 <body>
     <div class="booking-wrapper">
+        <!-- Top Brand & PWA Install Bar -->
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; margin: 0 auto; max-width: 600px; width: 100%;">
+            <a href="/app/agendou/" style="display: flex; align-items: center; gap: 8px; text-decoration: none;">
+                <img src="/app/agendou/public/icons/icon-192.png" alt="AGENDOU!!" style="width: 28px; height: 28px; border-radius: 8px; box-shadow: 0 2px 8px rgba(56, 189, 248, 0.4);">
+                <span style="font-size: 0.85rem; font-weight: 800; color: #fff; letter-spacing: -0.01em;">AGENDOU!!</span>
+            </a>
+            <button type="button" onclick="triggerPWAInstall()" class="btn-pwa-install" style="background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                <span>📲</span> Instalar App
+            </button>
+        </div>
+
         <!-- Business Header -->
         <header class="business-hero">
             <div class="business-hero-content">
@@ -278,7 +297,7 @@ $googleClientId = $config['google']['client_id'];
 
         <!-- Footer -->
         <footer class="booking-footer">
-            <p>Agendamento seguro proporcionado por <strong>AGENDOU • 4U.IA.BR</strong></p>
+            <p>Agendamento seguro proporcionado por <strong>AGENDOU!! • 4U.IA.BR</strong></p>
         </footer>
     </div>
 
@@ -549,5 +568,6 @@ $googleClientId = $config['google']['client_id'];
             });
         }
     </script>
+    <script src="/app/agendou/public/js/pwa-installer.js"></script>
 </body>
 </html>

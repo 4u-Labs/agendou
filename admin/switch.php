@@ -16,7 +16,7 @@ $pdo = Database::getConnection();
 $roleParam = $_GET['role'] ?? '';
 $tenantParam = (int)($_GET['tenant'] ?? 0);
 
-if ($roleParam === 'super') {
+if ($roleParam === 'super' || $roleParam === 'superadmin') {
     // Definir sessão como Super Admin global
     $_SESSION['agendou_user_id'] = 1;
     $_SESSION['agendou_user_role'] = 'superadmin';
@@ -92,8 +92,16 @@ if ($currentUserRole === 'superadmin') {
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Central Master de Acesso • AGENDOU (fbr4g4@gmail.com)</title>
-    <link rel="icon" type="image/png" href="/loja/favicon-32x32.png"/>
+    <title>Central Master de Acesso • AGENDOU!! (fbr4g4@gmail.com)</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/app/agendou/public/icons/favicon-32x32.png"/>
+    <link rel="icon" type="image/png" sizes="16x16" href="/app/agendou/public/icons/favicon-16x16.png"/>
+    <link rel="apple-touch-icon" href="/app/agendou/public/icons/apple-touch-icon.png"/>
+    <link rel="shortcut icon" href="/app/agendou/public/icons/favicon.ico"/>
+    <link rel="manifest" href="/app/agendou/manifest.json"/>
+    <meta name="theme-color" content="#0284c7"/>
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+    <meta name="apple-mobile-web-app-title" content="AGENDOU!!"/>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -383,7 +391,7 @@ if ($currentUserRole === 'superadmin') {
         </div>
 
         <footer class="text-center mt-4" style="color: #64748b; font-size: 0.78rem;">
-            © 2026 AGENDOU • Central de Alternância de Permissões • 4U.IA.BR
+            © 2026 AGENDOU!! • Central de Alternância de Permissões • 4U.IA.BR
         </footer>
 
     </div>
@@ -395,5 +403,6 @@ if ($currentUserRole === 'superadmin') {
             });
         }
     </script>
+    <script src="/app/agendou/public/js/pwa-installer.js"></script>
 </body>
 </html>

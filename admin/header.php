@@ -12,8 +12,16 @@ $activeNav = $activeNav ?? 'dashboard';
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title><?= $pageTitle ?? 'Painel Administrativo' ?> • AGENDOU</title>
-    <link rel="icon" type="image/png" href="/loja/favicon-32x32.png"/>
+    <title><?= $pageTitle ?? 'Painel Administrativo' ?> • AGENDOU!!</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/app/agendou/public/icons/favicon-32x32.png"/>
+    <link rel="icon" type="image/png" sizes="16x16" href="/app/agendou/public/icons/favicon-16x16.png"/>
+    <link rel="apple-touch-icon" href="/app/agendou/public/icons/apple-touch-icon.png"/>
+    <link rel="shortcut icon" href="/app/agendou/public/icons/favicon.ico"/>
+    <link rel="manifest" href="/app/agendou/manifest.json"/>
+    <meta name="theme-color" content="#0284c7"/>
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+    <meta name="apple-mobile-web-app-title" content="AGENDOU!!"/>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -25,10 +33,10 @@ $activeNav = $activeNav ?? 'dashboard';
         <aside class="admin-sidebar" id="adminSidebar">
             <?php if (($currentUser['role'] ?? '') === 'superadmin'): ?>
                 <!-- SUPER ADMIN SAAS SIDEBAR -->
-                <div class="sidebar-header">
-                    <div class="brand-badge" style="background: rgba(250, 204, 21, 0.15); border-color: rgba(250, 204, 21, 0.4); color: #facc15;">👑</div>
+                <div class="sidebar-header" style="display: flex; align-items: center; gap: 12px; padding: 18px 20px;">
+                    <img src="/app/agendou/public/icons/icon-192.png" alt="AGENDOU!!" style="width: 42px; height: 42px; border-radius: 12px; box-shadow: 0 4px 15px rgba(56, 189, 248, 0.4); flex-shrink: 0;">
                     <div class="brand-info">
-                        <h2>AGENDOU SAAS</h2>
+                        <h2 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: #fff; letter-spacing: -0.02em;">AGENDOU!!</h2>
                         <span style="color: #facc15; font-size: 0.72rem; font-weight: 700;">Fundador • 4U.IA.BR</span>
                     </div>
                 </div>
@@ -55,14 +63,22 @@ $activeNav = $activeNav ?? 'dashboard';
                         <span class="nav-icon">⚙️</span>
                         <span>Configurações & Chave PIX</span>
                     </a>
+                    <a href="javascript:void(0)" onclick="openAppTutorialModal()" class="nav-item" style="color: #38bdf8; background: rgba(56, 189, 248, 0.06); border: 1px dashed rgba(56, 189, 248, 0.3); margin-top: 6px; border-radius: 10px;">
+                        <span class="nav-icon">📖</span>
+                        <span>Tutorial do App</span>
+                    </a>
+                    <a href="javascript:void(0)" onclick="triggerPWAInstall()" class="nav-item btn-pwa-install" style="color: #38bdf8; background: linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(2, 132, 199, 0.05)); border: 1px solid rgba(56, 189, 248, 0.35); margin-top: 6px; border-radius: 10px; font-weight: 700;" title="Instalar AGENDOU!! no dispositivo">
+                        <span class="nav-icon">📲</span>
+                        <span>Instalar AGENDOU!!</span>
+                    </a>
                 </nav>
             <?php else: ?>
                 <!-- BARBEARIA / ESTABELECIMENTO SIDEBAR -->
-                <div class="sidebar-header">
-                    <div class="brand-badge">⚡</div>
+                <div class="sidebar-header" style="display: flex; align-items: center; gap: 12px; padding: 18px 20px;">
+                    <img src="/app/agendou/public/icons/icon-192.png" alt="AGENDOU!!" style="width: 42px; height: 42px; border-radius: 12px; box-shadow: 0 4px 15px rgba(56, 189, 248, 0.4); flex-shrink: 0;">
                     <div class="brand-info">
-                        <h2>AGENDOU</h2>
-                        <span><?= htmlspecialchars($currentTenant['name'] ?? 'Minha Barbearia') ?></span>
+                        <h2 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: #fff; letter-spacing: -0.02em;">AGENDOU!!</h2>
+                        <span style="color: var(--text-muted); font-size: 0.74rem;"><?= htmlspecialchars($currentTenant['name'] ?? 'Minha Barbearia') ?></span>
                     </div>
                 </div>
 
@@ -74,6 +90,14 @@ $activeNav = $activeNav ?? 'dashboard';
                     <a href="/app/agendou/admin/agenda.php" class="nav-item <?= $activeNav === 'agenda' ? 'active' : '' ?>">
                         <span class="nav-icon">📅</span>
                         <span>Agenda Visual</span>
+                    </a>
+                    <a href="/app/agendou/admin/financeiro.php" class="nav-item <?= $activeNav === 'financeiro' ? 'active' : '' ?>">
+                        <span class="nav-icon">💰</span>
+                        <span>Caixa & Faturamento</span>
+                    </a>
+                    <a href="/app/agendou/admin/pacotes.php" class="nav-item <?= $activeNav === 'pacotes' ? 'active' : '' ?>">
+                        <span class="nav-icon">📦</span>
+                        <span>Clubes & Pacotes</span>
                     </a>
                     <a href="/app/agendou/admin/services.php" class="nav-item <?= $activeNav === 'services' ? 'active' : '' ?>">
                         <span class="nav-icon">✂️</span>
@@ -102,6 +126,14 @@ $activeNav = $activeNav ?? 'dashboard';
                     <a href="/app/agendou/admin/subscription.php" class="nav-item <?= $activeNav === 'subscription' ? 'active' : '' ?>">
                         <span class="nav-icon">💳</span>
                         <span>Minha Assinatura</span>
+                    </a>
+                    <a href="javascript:void(0)" onclick="openAppTutorialModal()" class="nav-item <?= $activeNav === 'tutorial' ? 'active' : '' ?>" style="color: #38bdf8; background: rgba(56, 189, 248, 0.06); border: 1px dashed rgba(56, 189, 248, 0.3); margin-top: 6px; border-radius: 10px;">
+                        <span class="nav-icon">📖</span>
+                        <span>Tutorial do App</span>
+                    </a>
+                    <a href="javascript:void(0)" onclick="triggerPWAInstall()" class="nav-item btn-pwa-install" style="color: #38bdf8; background: linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(2, 132, 199, 0.05)); border: 1px solid rgba(56, 189, 248, 0.35); margin-top: 6px; border-radius: 10px; font-weight: 700;" title="Instalar AGENDOU!! no dispositivo">
+                        <span class="nav-icon">📲</span>
+                        <span>Instalar AGENDOU!!</span>
                     </a>
                 </nav>
             <?php endif; ?>
@@ -142,6 +174,12 @@ $activeNav = $activeNav ?? 'dashboard';
                     <?php endif; ?>
                 </div>
                 <div class="topbar-right">
+                    <a href="javascript:void(0)" onclick="triggerPWAInstall()" class="btn-public-link btn-pwa-install" style="border-color: rgba(56, 189, 248, 0.5); background: rgba(56, 189, 248, 0.12); color: #38bdf8; margin-right: 8px; font-weight: 700;" title="Instalar AGENDOU!! na sua tela inicial">
+                        <span>📲 Instalar App</span>
+                    </a>
+                    <a href="javascript:void(0)" onclick="openAppTutorialModal()" class="btn-public-link" style="border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; margin-right: 8px;" title="Ver tutorial passo a passo do sistema">
+                        <span>📖 Tutorial</span>
+                    </a>
                     <a href="/app/agendou/admin/switch.php" class="btn-public-link" style="border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; margin-right: 8px;" title="Alternar entre Super Admin, Barbearia e Cliente (fbr4g4@gmail.com)">
                         <span>🔄 Alternar Nível</span>
                     </a>
