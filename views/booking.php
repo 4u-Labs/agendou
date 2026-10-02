@@ -202,21 +202,27 @@ $googleClientId = $config['google']['client_id'];
                     </button>
                 </div>
 
+                <?php
+                    $isTestClient = !empty($_GET['test_client']);
+                    $defName = $isTestClient ? 'Fabiano' : '';
+                    $defWhatsapp = $isTestClient ? '(34) 99831-9000' : '';
+                    $defEmail = $isTestClient ? 'fbr4g4@gmail.com' : '';
+                ?>
                 <form id="bookingForm" onsubmit="submitBooking(event)">
                     <div class="form-group">
                         <label class="form-label">Seu Nome Completo *</label>
-                        <input type="text" id="custName" class="form-input" placeholder="Ex: João Silva" required>
+                        <input type="text" id="custName" class="form-input" placeholder="Ex: João Silva" required value="<?= htmlspecialchars($defName) ?>">
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">WhatsApp (com DDD) *</label>
-                        <input type="tel" id="custWhatsapp" class="form-input" placeholder="(38) 99999-9999" required maxlength="15">
+                        <input type="tel" id="custWhatsapp" class="form-input" placeholder="(38) 99999-9999" required maxlength="15" value="<?= htmlspecialchars($defWhatsapp) ?>">
                         <small style="color: var(--text-muted); font-size: 0.75rem;">Você receberá o comprovante de agendamento por aqui.</small>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">E-mail (opcional)</label>
-                        <input type="email" id="custEmail" class="form-input" placeholder="seuemail@gmail.com">
+                        <input type="email" id="custEmail" class="form-input" placeholder="seuemail@gmail.com" value="<?= htmlspecialchars($defEmail) ?>">
                     </div>
 
                     <button type="submit" class="btn-confirm-booking" id="btnSubmitBooking">

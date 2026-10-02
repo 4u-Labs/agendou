@@ -16,6 +16,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
 
     if ($email && $password) {
+        // Acesso Master para testes com a conta fbr4g4@gmail.com
+        if (strtolower($email) === 'fbr4g4@gmail.com' && $password === 'admin123') {
+            $_SESSION['agendou_user_id'] = 1;
+            $_SESSION['agendou_user_role'] = 'superadmin';
+            unset($_SESSION['admin_tenant_id']);
+            header("Location: /app/agendou/admin/switch.php");
+            exit;
+        }
+
         $pdo = Database::getConnection();
         $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
         $stmt->execute([$email]);
@@ -142,8 +151,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="demo-credentials">
             <strong>Credenciais Rápidas de Teste:</strong><br>
             <span>Barbearia: <code>pedro@barbearia.com</code> (senha: <code>admin123</code>)</span><br>
-            <span class="demo-btn-fill" onclick="fillDemo('pedro@barbearia.com', 'admin123')">⚡ Preencher Barbearia</span>
-            <span class="demo-btn-fill" onclick="fillDemo('admin@agendou.com.br', 'admin123')">👑 Preencher SuperAdmin</span>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px;">
+                <span class="demo-btn-fill" onclick="fillDemo('pedro@barbearia.com', 'admin123')">⚡ Preencher Barbearia</span>
+                <span class="demo-btn-fill" onclick="fillDemo('admin@agendou.com.br', 'admin123')">👑 Preencher SuperAdmin</span>
+            </div>
+            <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.06); text-align: center;">
+                <a href="/app/agendou/admin/switch.php" style="display: block; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); color: #38bdf8; padding: 8px 12px; border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 0.8rem;">
+                    🚀 Central Master: Alternar Níveis (fbr4g4@gmail.com) →
+                </a>
+            </div>
         </div>
     </div>
 

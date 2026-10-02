@@ -775,6 +775,10 @@ require_once __DIR__ . '/header.php';
                         </td>
                         <td>
                             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                <a href="/app/agendou/admin/switch.php?role=barber&tenant=<?= $t['id'] ?>" class="btn-secondary" style="padding: 5px 8px; font-size: 0.72rem; color: #38bdf8; text-decoration: none; font-weight: 700; border-color: rgba(56, 189, 248, 0.4);" title="Acessar painel como este estabelecimento">
+                                    👁️ Entrar
+                                </a>
+
                                 <a href="<?= $waCobrancaUrl ?>" target="_blank" class="btn-secondary" style="padding: 5px 8px; font-size: 0.72rem; color: #25d366; text-decoration: none;" title="<?= $isFreePlan ? 'Mensagem no WhatsApp de acompanhamento' : 'Cobrança via WhatsApp' ?>">
                                     💬
                                 </a>

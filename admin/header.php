@@ -142,13 +142,16 @@ $activeNav = $activeNav ?? 'dashboard';
                     <?php endif; ?>
                 </div>
                 <div class="topbar-right">
+                    <a href="/app/agendou/admin/switch.php" class="btn-public-link" style="border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; margin-right: 8px;" title="Alternar entre Super Admin, Barbearia e Cliente (fbr4g4@gmail.com)">
+                        <span>🔄 Alternar Nível</span>
+                    </a>
                     <?php if (($currentUser['role'] ?? '') === 'superadmin'): ?>
                         <a href="/app/agendou/" target="_blank" class="btn-public-link" style="border-color: rgba(250, 204, 21, 0.4); color: #facc15;">
-                            <span>🌐 Ver Landing Page do SaaS</span>
+                            <span>🌐 Ver Landing Page</span>
                         </a>
                     <?php elseif (!empty($currentTenant['slug'])): ?>
                         <a href="/app/agendou/?slug=<?= urlencode($currentTenant['slug']) ?>" target="_blank" class="btn-public-link">
-                            <span>🔗 Ver Minha Página de Agendamento</span>
+                            <span>🔗 Ver Minha Página</span>
                         </a>
                     <?php endif; ?>
                 </div>
