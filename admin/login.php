@@ -16,16 +16,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
 
     if ($email && $password) {
-        // Acesso Master para o Fundador (fbr4g4@gmail.com)
-        if (strtolower($email) === 'fbr4g4@gmail.com' && $password === 'admin123') {
-            $_SESSION['agendou_user_id'] = 1;
-            $_SESSION['agendou_user_role'] = 'superadmin';
-            $_SESSION['master_authorized'] = true;
-            unset($_SESSION['admin_tenant_id']);
-            header("Location: /app/agendou/admin/switch.php");
-            exit;
-        }
-
         $pdo = Database::getConnection();
         $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
         $stmt->execute([$email]);

@@ -94,34 +94,7 @@ if (!empty($_SESSION['master_authorized']) ||
     $_SESSION['google_email'] = 'fbr4g4@gmail.com';
 }
 
-// Se enviou senha master pelo formulário de desbloqueio
-$authError = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['master_password'])) {
-    $inputPass = trim($_POST['master_password'] ?? '');
-    
-    // Validar com senha padrão do fundador ou com o hash do superadmin no banco
-    $validMaster = ($inputPass === 'admin123');
-    if (!$validMaster) {
-        $stmtSuper = $pdo->prepare("SELECT password FROM users WHERE role = 'superadmin' LIMIT 1");
-        $stmtSuper->execute();
-        $superHash = $stmtSuper->fetchColumn();
-        if ($superHash && password_verify($inputPass, $superHash)) {
-            $validMaster = true;
-        }
-    }
-    
-    if ($validMaster) {
-        $_SESSION['master_authorized'] = true;
-        $_SESSION['agendou_user_id'] = 1;
-        $_SESSION['agendou_user_role'] = 'superadmin';
-        unset($_SESSION['admin_tenant_id']);
-        $isFounderAuthorized = true;
-    } else {
-        $authError = 'Chave Master incorreta. Acesso restrito ao fundador.';
-    }
-}
-
-// Se NÃO estiver autorizado, renderizar tela de bloqueio e impedir qualquer troca
+// Se NÃO estiver autorizado, renderizar tela de bloqueio exclusiva com Google
 if (!$isFounderAuthorized) {
     ?>
     <!DOCTYPE html>
@@ -205,39 +178,6 @@ if (!$isFounderAuthorized) {
                 transform: translateY(-2px);
                 box-shadow: 0 6px 20px rgba(255, 255, 255, 0.15);
             }
-            .form-input-pass {
-                background: rgba(255, 255, 255, 0.04);
-                border: 1px solid var(--border-glass);
-                border-radius: 12px;
-                color: #fff;
-                padding: 14px 16px;
-                font-size: 1rem;
-                width: 100%;
-                margin-bottom: 16px;
-                outline: none;
-                transition: border-color 0.2s;
-            }
-            .form-input-pass:focus {
-                border-color: var(--accent);
-                background: rgba(255, 255, 255, 0.07);
-            }
-            .btn-unlock {
-                background: linear-gradient(135deg, #0284c7, #0284c7 50%, #0369a1);
-                color: #fff;
-                font-weight: 800;
-                font-size: 0.95rem;
-                border: none;
-                border-radius: 12px;
-                padding: 14px;
-                width: 100%;
-                cursor: pointer;
-                box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);
-                transition: all 0.2s ease;
-            }
-            .btn-unlock:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 6px 20px rgba(2, 132, 199, 0.6);
-            }
             .err-msg {
                 background: rgba(239, 68, 68, 0.15);
                 border: 1px solid rgba(239, 68, 68, 0.3);
@@ -259,12 +199,10 @@ if (!$isFounderAuthorized) {
                 Central Master
             </h2>
             <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 24px; line-height: 1.5;">
-                Exclusivo para <strong>fbr4g4@gmail.com</strong>. Entre diretamente com sua conta Google ou use sua Chave Master.
+                Exclusivo para o fundador (<strong>fbr4g4@gmail.com</strong>). Conecte sua conta Google autorizada para desbloquear a Central Master.
             </p>
 
-            <div id="lockErrorBox" class="err-msg" style="<?= $authError ? '' : 'display: none;' ?>">
-                <?= htmlspecialchars($authError) ?>
-            </div>
+            <div id="lockErrorBox" class="err-msg" style="display: none;"></div>
 
             <!-- Botão Google Login -->
             <button type="button" class="btn-google-login" onclick="loginWithGoogle()" id="btnGoogleAuth">
@@ -276,17 +214,6 @@ if (!$isFounderAuthorized) {
                 </svg>
                 <span>Entrar com Google (fbr4g4@gmail.com)</span>
             </button>
-
-            <div style="display: flex; align-items: center; margin: 20px 0; color: #475569; font-size: 0.75rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">
-                <span style="flex: 1; height: 1px; background: rgba(255,255,255,0.08);"></span>
-                <span style="padding: 0 10px;">ou Chave Master</span>
-                <span style="flex: 1; height: 1px; background: rgba(255,255,255,0.08);"></span>
-            </div>
-
-            <form method="POST">
-                <input type="password" name="master_password" class="form-input-pass" placeholder="Digite a Chave Master..." autofocus required>
-                <button type="submit" class="btn-unlock">⚡ Desbloquear com Chave</button>
-            </form>
 
             <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-glass);">
                 <a href="/app/agendou/admin/login.php" style="color: #64748b; font-size: 0.8rem; text-decoration: none; font-weight: 600;">
