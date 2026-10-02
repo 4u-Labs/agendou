@@ -21,10 +21,16 @@ if (!in_array($currentPlanKey, ['free', 'starter', 'plus'])) {
 $monthlyPrice = (float)($tenant['monthly_price'] ?? ($currentPlanKey === 'plus' ? 39.90 : ($currentPlanKey === 'starter' ? 19.90 : 0.00)));
 $dueDate = $tenant['next_due_date'] ? date('d/m/Y', strtotime($tenant['next_due_date'])) : 'Não definida';
 $subStatus = $tenant['subscription_status'] ?? 'active';
+$recurringType = $tenant['recurring_type'] ?? 'manual_pix';
+$preapprovalStatus = $tenant['preapproval_status'] ?? '';
+$isAutoRecurring = ($recurringType === 'auto_recurring' && in_array($preapprovalStatus, ['authorized', 'pending']));
 
 $today = date('Y-m-d');
 $isPastDue = $tenant['next_due_date'] && $today > $tenant['next_due_date'] && $currentPlanKey !== 'free';
 $daysDiff = $tenant['next_due_date'] ? (int)((strtotime($tenant['next_due_date']) - strtotime($today)) / 86400) : 30;
+
+// Verificação de retorno do checkout de assinatura do Mercado Pago
+$returnedFromMP = isset($_GET['sub_status']) && $_GET['sub_status'] === 'returned';
 
 // Buscar histórico de faturas do estabelecimento
 $stmtInv = $pdo->prepare("SELECT * FROM invoices WHERE tenant_id = ? ORDER BY id DESC LIMIT 5");
@@ -35,16 +41,31 @@ $invoices = $stmtInv->fetchAll();
 <div class="content-header">
     <div>
         <h1>Minha Assinatura • Planos & Pagamentos</h1>
-        <p>Gerencie seu plano, efetue o pagamento da mensalidade via PIX com aprovação instantânea pelo Mercado Pago.</p>
+        <p>Gerencie sua assinatura mensal com renovação automática no cartão ou pagamento avulso via PIX Mercado Pago.</p>
     </div>
 </div>
 
+<?php if ($returnedFromMP): ?>
+<div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.5); border-radius: 16px; padding: 18px 24px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
+    <div style="display: flex; align-items: center; gap: 14px;">
+        <span style="font-size: 2rem;">🎉</span>
+        <div>
+            <div style="font-size: 1.05rem; font-weight: 800; color: #10b981;">Assinatura Recorrente Registrada no Mercado Pago!</div>
+            <div style="font-size: 0.85rem; color: #fff;">Estamos sincronizando a autorização com o seu estabelecimento. O seu sistema será renovado todo mês automaticamente.</div>
+        </div>
+    </div>
+    <button type="button" class="btn-emerald" onclick="verificarAssinatura()" style="padding: 10px 18px; font-size: 0.85rem;">
+        🔄 Atualizar Status
+    </button>
+</div>
+<?php endif; ?>
+
 <!-- Status Atual da Assinatura -->
-<div class="card-box" style="margin-bottom: 28px; border-color: <?= $isPastDue ? 'rgba(239, 68, 68, 0.4)' : 'rgba(16, 185, 129, 0.4)' ?>;">
+<div class="card-box" style="margin-bottom: 28px; border-color: <?= $isPastDue ? 'rgba(239, 68, 68, 0.4)' : ($isAutoRecurring ? 'rgba(14, 165, 233, 0.5)' : 'rgba(16, 185, 129, 0.4)') ?>;">
     <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
         <div>
             <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 800; color: var(--text-muted); margin-bottom: 4px;">Plano Atual do Seu Estabelecimento</div>
-            <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
                 <h2 style="font-size: 1.8rem; font-weight: 800; color: #fff; margin: 0;">
                     <?php if ($currentPlanKey === 'free'): ?>
                         Plano FREE <span style="font-size: 1rem; color: var(--text-muted); font-weight: 500;">(Gratuito)</span>
@@ -54,6 +75,7 @@ $invoices = $stmtInv->fetchAll();
                         ⭐ Plano PLUS <span style="font-size: 1.1rem; color: #facc15; font-weight: 700;">(R$ 39,90/mês)</span>
                     <?php endif; ?>
                 </h2>
+
                 <?php if ($subStatus === 'suspended'): ?>
                     <span class="badge-status badge-cancelled">🚫 SUSPENSO / BLOQUEADO</span>
                 <?php elseif ($isPastDue): ?>
@@ -61,28 +83,47 @@ $invoices = $stmtInv->fetchAll();
                 <?php else: ?>
                     <span class="badge-status badge-confirmed">✓ ATIVO & EM DIA</span>
                 <?php endif; ?>
+
+                <?php if ($isAutoRecurring): ?>
+                    <span class="badge-status" style="background: rgba(14, 165, 233, 0.2); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.4);">
+                        🔄 RENOVAÇÃO AUTOMÁTICA ATIVA
+                    </span>
+                <?php endif; ?>
             </div>
+
             <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 8px;">
                 <?php if ($currentPlanKey === 'free'): ?>
-                    Você está no plano de entrada. Faça upgrade para ter Google Calendar, mais profissionais e agendamentos ampliados.
+                    Você está no plano de entrada. Ative uma assinatura para ter Google Calendar, mais profissionais e agendamentos ampliados.
+                <?php elseif ($isAutoRecurring): ?>
+                    <strong style="color: #38bdf8;">Assinatura Recorrente Ativa:</strong> Renovação automática agendada no Mercado Pago para <strong><?= $dueDate ?></strong> (R$ <?= number_format($monthlyPrice, 2, ',', '.') ?>/mês). Você não precisa se preocupar em lembrar de pagar!
                 <?php elseif ($isPastDue): ?>
-                    <strong style="color: var(--red);">Sua mensalidade venceu em <?= $dueDate ?>!</strong> Pague via PIX abaixo para restabelecer seus agendamentos imediatamente.
+                    <strong style="color: var(--red);">Sua mensalidade venceu em <?= $dueDate ?>!</strong> Pague abaixo via PIX ou ative a assinatura recorrente para restabelecer seus agendamentos imediatamente.
                 <?php else: ?>
                     Próximo vencimento: <strong style="color: var(--primary);"><?= $dueDate ?></strong> (faltam <?= max(0, $daysDiff) ?> dias).
                 <?php endif; ?>
             </p>
         </div>
 
-        <div>
-            <?php if ($currentPlanKey === 'free'): ?>
-                <button type="button" class="btn-emerald" onclick="iniciarPix('starter')" style="padding: 12px 22px; font-weight: 800; font-size: 0.9rem;">
-                    <span>⚡ Fazer Upgrade para STARTER (R$ 19,90)</span>
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <?php if ($isAutoRecurring): ?>
+                <button type="button" class="btn-secondary" onclick="cancelarAssinaturaRecorrente()" style="padding: 10px 18px; font-weight: 700; font-size: 0.85rem; border-color: rgba(239,68,68,0.4); color: #f87171;">
+                    ✕ Cancelar Renovação Automática
+                </button>
+            <?php elseif ($currentPlanKey === 'free'): ?>
+                <button type="button" class="btn-primary" onclick="iniciarAssinaturaRecorrente('starter')" style="padding: 12px 20px; font-weight: 800; font-size: 0.9rem; background: linear-gradient(135deg, #0284c7, #0369a1);">
+                    <span>🔄 Assinar STARTER Recorrente</span>
                     <span>→</span>
                 </button>
+                <button type="button" class="btn-emerald" onclick="iniciarPix('starter')" style="padding: 12px 18px; font-weight: 700; font-size: 0.85rem;">
+                    <span>⚡ PIX Avulso (R$ 19,90)</span>
+                </button>
             <?php else: ?>
-                <button type="button" class="btn-primary" onclick="iniciarPix('<?= $currentPlanKey ?>')" style="padding: 12px 22px; font-weight: 800; font-size: 0.9rem; background: linear-gradient(135deg, #10b981, #059669);">
-                    <span>⚡ Pagar Mensalidade via PIX Mercado Pago</span>
+                <button type="button" class="btn-primary" onclick="iniciarAssinaturaRecorrente('<?= $currentPlanKey ?>')" style="padding: 12px 20px; font-weight: 800; font-size: 0.9rem; background: linear-gradient(135deg, #0284c7, #0369a1);">
+                    <span>🔄 Ativar Assinatura Recorrente Mensal</span>
                     <span>→</span>
+                </button>
+                <button type="button" class="btn-emerald" onclick="iniciarPix('<?= $currentPlanKey ?>')" style="padding: 12px 18px; font-weight: 700; font-size: 0.85rem;">
+                    <span>⚡ Pagar Mês com PIX</span>
                 </button>
             <?php endif; ?>
         </div>
@@ -92,7 +133,7 @@ $invoices = $stmtInv->fetchAll();
 <!-- VITRINE DOS 3 PLANOS OFICIAIS -->
 <div style="margin-bottom: 32px;">
     <h2 style="font-size: 1.25rem; color: #fff; margin-bottom: 6px;">Escolha o Plano Ideal para seu Negócio</h2>
-    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">Todos os planos pagos contam com liberação automática instantânea via PIX Mercado Pago.</p>
+    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">Você pode assinar com renovação mensal automática (cartão/conta Mercado Pago) ou pagar mensalmente via PIX.</p>
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
         
@@ -154,9 +195,12 @@ $invoices = $stmtInv->fetchAll();
                     <li>✓ QR Code de balcão e link personalizado</li>
                 </ul>
             </div>
-            <div>
-                <button type="button" class="btn-emerald" style="width: 100%; padding: 12px; font-weight: 800;" onclick="iniciarPix('starter')">
-                    <?= $currentPlanKey === 'starter' ? 'Pagar / Renovar STARTER' : 'Assinar STARTER (R$ 19,90)' ?> →
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <button type="button" class="btn-primary" style="width: 100%; padding: 11px; font-weight: 800; background: linear-gradient(135deg, #0284c7, #0369a1); font-size: 0.88rem;" onclick="iniciarAssinaturaRecorrente('starter')">
+                    🔄 Assinar Recorrente (R$ 19,90/mês)
+                </button>
+                <button type="button" class="btn-emerald" style="width: 100%; padding: 9px; font-weight: 700; font-size: 0.82rem;" onclick="iniciarPix('starter')">
+                    ⚡ Pagar 1 Mês Avulso via PIX
                 </button>
             </div>
         </div>
@@ -185,9 +229,12 @@ $invoices = $stmtInv->fetchAll();
                     <li>✓ Suporte prioritário 4U.IA.BR</li>
                 </ul>
             </div>
-            <div>
-                <button type="button" class="btn-primary" style="width: 100%; padding: 12px; font-weight: 800; background: linear-gradient(135deg, #facc15, #eab308); color: #000;" onclick="iniciarPix('plus')">
-                    <?= $currentPlanKey === 'plus' ? 'Pagar / Renovar PLUS' : 'Assinar PLUS (R$ 39,90)' ?> →
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <button type="button" class="btn-primary" style="width: 100%; padding: 11px; font-weight: 800; background: linear-gradient(135deg, #facc15, #eab308); color: #000; font-size: 0.88rem;" onclick="iniciarAssinaturaRecorrente('plus')">
+                    🔄 Assinar Recorrente (R$ 39,90/mês)
+                </button>
+                <button type="button" class="btn-emerald" style="width: 100%; padding: 9px; font-weight: 700; font-size: 0.82rem;" onclick="iniciarPix('plus')">
+                    ⚡ Pagar 1 Mês Avulso via PIX
                 </button>
             </div>
         </div>
@@ -220,7 +267,13 @@ $invoices = $stmtInv->fetchAll();
                             <td>#<?= $inv['id'] ?></td>
                             <td><strong style="color: #fff;">R$ <?= number_format((float)$inv['amount'], 2, ',', '.') ?></strong></td>
                             <td><?= $inv['paid_at'] ? date('d/m/Y H:i', strtotime($inv['paid_at'])) : date('d/m/Y', strtotime($inv['created_at'])) ?></td>
-                            <td>PIX Mercado Pago</td>
+                            <td>
+                                <?php if ($inv['payment_method'] === 'auto_recurring'): ?>
+                                    <span style="color: #38bdf8; font-weight: 700;">🔄 Assinatura Automática MP</span>
+                                <?php else: ?>
+                                    <span>⚡ PIX Mercado Pago</span>
+                                <?php endif; ?>
+                            </td>
                             <td>
                                 <?php if ($inv['status'] === 'paid'): ?>
                                     <span class="badge-status badge-confirmed">✓ PAGO & APROVADO</span>
@@ -294,9 +347,138 @@ $invoices = $stmtInv->fetchAll();
     </div>
 </div>
 
+<!-- MODAL ASSINATURA RECORRENTE MERCADO PAGO -->
+<div id="modalSubMP" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 99999; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 24px; width: 100%; max-width: 480px; padding: 32px; box-shadow: 0 25px 50px rgba(0,0,0,0.8); text-align: center;">
+        
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 24px;">🔄</span>
+                <span style="font-size: 0.95rem; font-weight: 800; color: #fff;">ASSINATURA RECORRENTE AUTOMÁTICA</span>
+            </div>
+            <button type="button" onclick="fecharModalSub()" style="background: none; border: none; color: var(--text-muted); font-size: 22px; cursor: pointer;">✕</button>
+        </div>
+
+        <div id="subLoading" style="padding: 40px 0;">
+            <div style="font-size: 32px; animation: spin 1s infinite linear;">⏳</div>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 14px;">Preparando seu checkout seguro no Mercado Pago...</p>
+        </div>
+
+        <div id="subContent" style="display: none; text-align: left;">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 4px;">Plano Selecionado: <strong id="subPlanLabel" style="color: #fff;"></strong></div>
+                <div style="font-size: 2rem; font-weight: 900; color: #38bdf8; margin-bottom: 6px;" id="subAmountLabel"></div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Cobrança automática mensal no Cartão ou Saldo Mercado Pago</div>
+            </div>
+
+            <div style="background: rgba(14, 165, 233, 0.08); border: 1px solid rgba(14, 165, 233, 0.25); border-radius: 16px; padding: 16px; margin-bottom: 24px;">
+                <div style="font-size: 0.8rem; font-weight: 800; color: #38bdf8; margin-bottom: 8px; text-transform: uppercase;">Por que ativar a recorrência?</div>
+                <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.8rem; color: var(--text-secondary); line-height: 1.8;">
+                    <li>✓ <strong>Sem bloqueios por esquecimento:</strong> sua agenda fica 100% ativa.</li>
+                    <li>✓ <strong>Segurança Mercado Pago:</strong> dados protegidos e criptografados.</li>
+                    <li>✓ <strong>Sem carência nem fidelidade:</strong> cancele quando quiser em 1 clique.</li>
+                </ul>
+            </div>
+
+            <button type="button" id="btnIrCheckoutMP" class="btn-primary" style="width: 100%; padding: 14px; font-weight: 800; font-size: 0.95rem; background: linear-gradient(135deg, #0284c7, #0369a1); display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <span>Ir para Checkout Seguro Mercado Pago</span>
+                <span>→</span>
+            </button>
+            <div style="text-align: center; margin-top: 10px;">
+                <span style="font-size: 0.75rem; color: var(--text-muted);">Você será redirecionado para autorizar o débito seguro no Mercado Pago.</span>
+            </div>
+        </div>
+
+    </div>
+</div>
+
 <script>
 let pollInterval = null;
 
+// ========================================================
+// RECORRÊNCIA MERCADO PAGO (PREAPPROVAL)
+// ========================================================
+function iniciarAssinaturaRecorrente(plan) {
+    const modal = document.getElementById('modalSubMP');
+    modal.style.display = 'flex';
+    document.getElementById('subLoading').style.display = 'block';
+    document.getElementById('subContent').style.display = 'none';
+
+    fetch('/app/agendou/api/mp_subscription.php?action=create&plan=' + encodeURIComponent(plan) + '&tenant_id=<?= $tenantId ?>')
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.init_point) {
+                document.getElementById('subLoading').style.display = 'none';
+                document.getElementById('subContent').style.display = 'block';
+
+                document.getElementById('subPlanLabel').innerText = 'Plano ' + data.plan;
+                document.getElementById('subAmountLabel').innerText = 'R$ ' + data.amount_formatted + ' / mês';
+
+                const btn = document.getElementById('btnIrCheckoutMP');
+                btn.onclick = function() {
+                    window.location.href = data.init_point;
+                };
+            } else {
+                alert('Erro ao configurar assinatura: ' + (data.error || 'Tente novamente.'));
+                fecharModalSub();
+            }
+        })
+        .catch(err => {
+            alert('Falha na comunicação com o servidor para assinatura.');
+            fecharModalSub();
+        });
+}
+
+function fecharModalSub() {
+    document.getElementById('modalSubMP').style.display = 'none';
+}
+
+function verificarAssinatura() {
+    fetch('/app/agendou/api/mp_subscription.php?action=check&tenant_id=<?= $tenantId ?>')
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.status === 'authorized') {
+                alert('✓ ' + data.message);
+                window.location.href = '/app/agendou/admin/subscription.php';
+            } else {
+                alert('Status da assinatura: ' + (data.message || data.status || 'Pendente de aprovação'));
+            }
+        })
+        .catch(() => {
+            alert('Não foi possível verificar status da assinatura.');
+        });
+}
+
+function cancelarAssinaturaRecorrente() {
+    if (!confirm('Deseja realmente cancelar a renovação automática da sua assinatura?\n\nO seu sistema continuará ativo normalmente até o fim do período já pago, mas a partir do próximo mês o pagamento voltará a ser manual via PIX.')) {
+        return;
+    }
+
+    fetch('/app/agendou/api/mp_subscription.php?action=cancel&tenant_id=<?= $tenantId ?>')
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                window.location.reload();
+            } else {
+                alert('Erro ao cancelar: ' + (data.error || 'Tente novamente.'));
+            }
+        })
+        .catch(() => {
+            alert('Falha na comunicação com o servidor.');
+        });
+}
+
+// Auto-check se acabou de retornar do checkout MP
+<?php if ($returnedFromMP): ?>
+window.addEventListener('DOMContentLoaded', () => {
+    setTimeout(verificarAssinatura, 1200);
+});
+<?php endif; ?>
+
+// ========================================================
+// PIX MERCADO PAGO AVULSO
+// ========================================================
 function iniciarPix(plan) {
     const modal = document.getElementById('modalPixMP');
     modal.style.display = 'flex';

@@ -196,6 +196,13 @@ if (isset($_GET['action']) && $_GET['action'] === 'run_billing_check') {
     exit;
 }
 
+// 2.5 ACTION: Executar Cron de Cobrança Recorrente Proativa & Lembretes
+if (isset($_GET['action']) && $_GET['action'] === 'run_cron_billing') {
+    require_once __DIR__ . '/../cron/recurring_billing.php';
+    header("Location: /app/agendou/admin/super.php?cron_executed=1#assinantes");
+    exit;
+}
+
 // 3. ACTION: Cortar / Bloquear Sistema Imediatamente
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action']) && $_POST['action'] === 'suspend_tenant') {
     $tenantId = (int)$_POST['tenant_id'];
@@ -488,6 +495,9 @@ require_once __DIR__ . '/header.php';
         <p>Acompanhe o faturamento recorrente (MRR), mensalidades, vencimentos, aplique cortes e configure o sistema.</p>
     </div>
     <div class="super-actions-header">
+        <a href="/app/agendou/admin/super.php?action=run_cron_billing" class="super-btn-action super-btn-cyan" title="Executa a verificação diária de recorrência, faturas e lembretes de PIX no WhatsApp">
+            <span>🔄 Cron Recorrente & WhatsApp</span>
+        </a>
         <a href="/app/agendou/admin/super.php?action=run_billing_check" class="super-btn-action super-btn-amber" title="Verifica vencimentos e aplica cortes automáticos para quem passou de 2 dias de atraso">
             <span>⚡ Varredura de Cortes</span>
         </a>
@@ -981,6 +991,16 @@ require_once __DIR__ . '/header.php';
                                 <span class="badge-status badge-confirmed" style="font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px;">
                                     <span>🟢</span> EM DIA
                                 </span>
+                            <?php endif; ?>
+
+                            <?php if (!$isFreePlan): ?>
+                                <div style="margin-top: 4px;">
+                                    <?php if (($t['recurring_type'] ?? '') === 'auto_recurring'): ?>
+                                        <span class="badge-status" style="font-size: 0.65rem; background: rgba(14, 165, 233, 0.2); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.4); padding: 2px 6px;">🔄 Recorrente MP</span>
+                                    <?php else: ?>
+                                        <span class="badge-status" style="font-size: 0.65rem; background: rgba(255, 255, 255, 0.05); color: var(--text-muted); border: 1px solid rgba(255, 255, 255, 0.1); padding: 2px 6px;">⚡ PIX Manual</span>
+                                    <?php endif; ?>
+                                </div>
                             <?php endif; ?>
                         </td>
                         <td>

@@ -82,6 +82,15 @@ class Database {
             if (!in_array('blocked_reason', $cols)) {
                 $pdo->exec("ALTER TABLE tenants ADD COLUMN blocked_reason TEXT DEFAULT ''");
             }
+            if (!in_array('mp_preapproval_id', $cols)) {
+                $pdo->exec("ALTER TABLE tenants ADD COLUMN mp_preapproval_id TEXT DEFAULT NULL");
+            }
+            if (!in_array('recurring_type', $cols)) {
+                $pdo->exec("ALTER TABLE tenants ADD COLUMN recurring_type TEXT DEFAULT 'manual_pix'");
+            }
+            if (!in_array('preapproval_status', $cols)) {
+                $pdo->exec("ALTER TABLE tenants ADD COLUMN preapproval_status TEXT DEFAULT NULL");
+            }
 
             $pdo->exec("
                 CREATE TABLE IF NOT EXISTS invoices (
@@ -102,6 +111,15 @@ class Database {
             $invCols = $pdo->query("PRAGMA table_info(invoices)")->fetchAll(PDO::FETCH_COLUMN, 1);
             if (!in_array('mp_id', $invCols)) {
                 $pdo->exec("ALTER TABLE invoices ADD COLUMN mp_id TEXT DEFAULT NULL");
+            }
+            if (!in_array('mp_preapproval_id', $invCols)) {
+                $pdo->exec("ALTER TABLE invoices ADD COLUMN mp_preapproval_id TEXT DEFAULT NULL");
+            }
+            if (!in_array('pix_copia_cola', $invCols)) {
+                $pdo->exec("ALTER TABLE invoices ADD COLUMN pix_copia_cola TEXT DEFAULT NULL");
+            }
+            if (!in_array('pix_qr_base64', $invCols)) {
+                $pdo->exec("ALTER TABLE invoices ADD COLUMN pix_qr_base64 TEXT DEFAULT NULL");
             }
         } catch (Throwable $e) {
             error_log("Schema update notice: " . $e->getMessage());

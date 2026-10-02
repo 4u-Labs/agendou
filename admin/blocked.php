@@ -125,8 +125,13 @@ $waUrl = "https://wa.me/{$supportWhatsapp}?text={$waMessage}";
             </div>
         </div>
 
+        <button type="button" onclick="abrirAssinaturaRecorrente()" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; font-weight: 800; padding: 16px 20px; border-radius: 14px; display: flex; align-items: center; justify-content: center; gap: 10px; border: none; width: 100%; cursor: pointer; font-size: 0.95rem; margin-bottom: 12px; box-shadow: 0 10px 25px rgba(2, 132, 199, 0.3);">
+            <span>🔄 REATIVAR COM ASSINATURA AUTOMÁTICA (NÃO BLOQUEIA MAIS)</span>
+            <span>→</span>
+        </button>
+
         <button type="button" class="btn-mp-pix" onclick="abrirPixMercadoPago()">
-            <span>⚡ PAGAR PIX MERCADO PAGO (LIBERA NA HORA)</span>
+            <span>⚡ REATIVAR COM PIX AVULSO DESTE MÊS</span>
             <span>→</span>
         </button>
 
@@ -194,8 +199,80 @@ $waUrl = "https://wa.me/{$supportWhatsapp}?text={$waMessage}";
         </div>
     </div>
 
+    <!-- MODAL ASSINATURA RECORRENTE MERCADO PAGO -->
+    <div id="modalSubMP" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 99999; align-items: center; justify-content: center; padding: 20px;">
+        <div style="background: var(--bg-card, #18181b); border: 1px solid var(--border-color, #27272a); border-radius: 24px; width: 100%; max-width: 460px; padding: 28px; box-shadow: 0 25px 50px rgba(0,0,0,0.8); text-align: center;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 22px;">🔄</span>
+                    <span style="font-size: 0.95rem; font-weight: 800; color: #fff;">ASSINATURA RECORRENTE AUTOMÁTICA</span>
+                </div>
+                <button type="button" onclick="fecharModalSub()" style="background: none; border: none; color: var(--text-muted); font-size: 22px; cursor: pointer;">✕</button>
+            </div>
+
+            <div id="subLoading" style="padding: 30px 0;">
+                <div style="font-size: 32px; animation: spin 1s infinite linear;">⏳</div>
+                <p style="font-size: 0.9rem; color: #a1a1aa; margin-top: 14px;">Preparando checkout no Mercado Pago...</p>
+            </div>
+
+            <div id="subContent" style="display: none; text-align: left;">
+                <div style="text-align: center; margin-bottom: 18px;">
+                    <div style="font-size: 0.85rem; color: #a1a1aa; margin-bottom: 4px;">Reativação Automática: <strong style="color: #fff;">Plano <?= strtoupper($plan) ?></strong></div>
+                    <div style="font-size: 1.8rem; font-weight: 900; color: #38bdf8; margin-bottom: 6px;">R$ <?= number_format($monthlyPrice, 2, ',', '.') ?> / mês</div>
+                    <div style="font-size: 0.78rem; color: #71717a;">Cobrança mensal no cartão / conta MP • Nunca mais fique bloqueado</div>
+                </div>
+
+                <div style="background: rgba(14, 165, 233, 0.08); border: 1px solid rgba(14, 165, 233, 0.25); border-radius: 14px; padding: 14px; margin-bottom: 20px;">
+                    <div style="font-size: 0.75rem; font-weight: 800; color: #38bdf8; margin-bottom: 6px; text-transform: uppercase;">Benefícios:</div>
+                    <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.78rem; color: #d4d4d8; line-height: 1.7;">
+                        <li>✓ <strong>Reativação Imediata:</strong> seu sistema e clientes liberados na hora.</li>
+                        <li>✓ <strong>Sem novos bloqueios:</strong> renova sozinho todo mês.</li>
+                        <li>✓ <strong>Sem fidelidade:</strong> cancele pelo painel quando quiser.</li>
+                    </ul>
+                </div>
+
+                <button type="button" id="btnIrCheckoutMP" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; font-weight: 800; padding: 14px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; border: none; width: 100%; cursor: pointer; font-size: 0.95rem;">
+                    <span>Concluir Assinatura no Mercado Pago</span>
+                    <span>→</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
     let pollInterval = null;
+
+    function abrirAssinaturaRecorrente() {
+        const modal = document.getElementById('modalSubMP');
+        modal.style.display = 'flex';
+        document.getElementById('subLoading').style.display = 'block';
+        document.getElementById('subContent').style.display = 'none';
+
+        fetch('/app/agendou/api/mp_subscription.php?action=create&plan=<?= $plan ?>&tenant_id=<?= $tenantId ?>')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.init_point) {
+                    document.getElementById('subLoading').style.display = 'none';
+                    document.getElementById('subContent').style.display = 'block';
+
+                    const btn = document.getElementById('btnIrCheckoutMP');
+                    btn.onclick = function() {
+                        window.location.href = data.init_point;
+                    };
+                } else {
+                    alert('Erro ao configurar assinatura: ' + (data.error || 'Tente novamente.'));
+                    fecharModalSub();
+                }
+            })
+            .catch(() => {
+                alert('Erro na comunicação com o servidor.');
+                fecharModalSub();
+            });
+    }
+
+    function fecharModalSub() {
+        document.getElementById('modalSubMP').style.display = 'none';
+    }
 
     function abrirPixMercadoPago() {
         const modal = document.getElementById('modalPixMP');
