@@ -25,7 +25,7 @@ $activeNav = $activeNav ?? 'dashboard';
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-    <link href="/app/agendou/public/css/admin.css?v=1.0" rel="stylesheet"/>
+    <link href="/app/agendou/public/css/admin.css?v=2.0" rel="stylesheet"/>
 </head>
 <body>
     <div class="admin-wrapper">
@@ -161,35 +161,35 @@ $activeNav = $activeNav ?? 'dashboard';
                     <span class="topbar-breadcrumb">Painel Administrativo / <?= $pageTitle ?? 'Visão Geral' ?></span>
                     <?php if (($currentUser['role'] ?? '') === 'superadmin'): ?>
                         <?php if (!empty($currentTenant['name'])): ?>
-                            <span style="margin-left: 12px; font-size: 0.75rem; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.4); color: #60a5fa; padding: 4px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px;">
+                            <span class="topbar-badge" style="margin-left: 12px; font-size: 0.75rem; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.4); color: #60a5fa; padding: 4px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px;">
                                 <span>👁️ Inspecionando:</span>
                                 <strong style="color: #fff;"><?= htmlspecialchars($currentTenant['name']) ?></strong>
                                 <a href="/app/agendou/admin/super.php" style="color: #60a5fa; text-decoration: underline; font-weight: 700;">[Voltar ao Painel SaaS]</a>
                             </span>
                         <?php else: ?>
-                            <span style="margin-left: 12px; font-size: 0.75rem; background: rgba(250, 204, 21, 0.15); border: 1px solid rgba(250, 204, 21, 0.4); color: #facc15; padding: 4px 12px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px; font-weight: 700;">
+                            <span class="topbar-badge" style="margin-left: 12px; font-size: 0.75rem; background: rgba(250, 204, 21, 0.15); border: 1px solid rgba(250, 204, 21, 0.4); color: #facc15; padding: 4px 12px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px; font-weight: 700;">
                                 <span>👑 Modo Fundador • Gestão Global da Plataforma</span>
                             </span>
                         <?php endif; ?>
                     <?php endif; ?>
                 </div>
                 <div class="topbar-right">
-                    <a href="javascript:void(0)" onclick="triggerPWAInstall()" class="btn-public-link btn-pwa-install" style="border-color: rgba(56, 189, 248, 0.5); background: rgba(56, 189, 248, 0.12); color: #38bdf8; margin-right: 8px; font-weight: 700;" title="Instalar AGENDOU!! na sua tela inicial">
-                        <span>📲 Instalar App</span>
+                    <a href="javascript:void(0)" onclick="triggerPWAInstall()" class="btn-public-link btn-pwa-install btn-topbar-pwa" style="border-color: rgba(56, 189, 248, 0.5); background: rgba(56, 189, 248, 0.12); color: #38bdf8; font-weight: 700;" title="Instalar AGENDOU!! na sua tela inicial">
+                        <span>📲 <span class="hide-mobile">Instalar </span>App</span>
                     </a>
-                    <a href="javascript:void(0)" onclick="openAppTutorialModal()" class="btn-public-link" style="border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; margin-right: 8px;" title="Ver tutorial passo a passo do sistema">
-                        <span>📖 Tutorial</span>
+                    <a href="javascript:void(0)" onclick="openAppTutorialModal()" class="btn-public-link btn-topbar-tutorial" style="border-color: rgba(56, 189, 248, 0.4); color: #38bdf8;" title="Ver tutorial passo a passo do sistema">
+                        <span>📖 <span class="hide-mobile">Tutorial</span></span>
                     </a>
-                    <a href="/app/agendou/admin/switch.php" class="btn-public-link" style="border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; margin-right: 8px;" title="Alternar entre Super Admin, Barbearia e Cliente (fbr4g4@gmail.com)">
-                        <span>🔄 Alternar Nível</span>
+                    <a href="/app/agendou/admin/switch.php" class="btn-public-link btn-topbar-switch" style="border-color: rgba(56, 189, 248, 0.4); color: #38bdf8;" title="Alternar entre Super Admin, Barbearia e Cliente (fbr4g4@gmail.com)">
+                        <span>🔄 <span class="hide-mobile">Alternar </span>Nível</span>
                     </a>
                     <?php if (($currentUser['role'] ?? '') === 'superadmin'): ?>
-                        <a href="/app/agendou/" target="_blank" class="btn-public-link" style="border-color: rgba(250, 204, 21, 0.4); color: #facc15;">
-                            <span>🌐 Ver Landing Page</span>
+                        <a href="/app/agendou/" target="_blank" class="btn-public-link btn-topbar-view" style="border-color: rgba(250, 204, 21, 0.4); color: #facc15;">
+                            <span>🌐 <span class="hide-mobile">Ver Landing Page</span><span class="show-mobile-only">Site</span></span>
                         </a>
                     <?php elseif (!empty($currentTenant['slug'])): ?>
-                        <a href="/app/agendou/?slug=<?= urlencode($currentTenant['slug']) ?>" target="_blank" class="btn-public-link">
-                            <span>🔗 Ver Minha Página</span>
+                        <a href="/app/agendou/?slug=<?= urlencode($currentTenant['slug']) ?>" target="_blank" class="btn-public-link btn-topbar-view">
+                            <span>🔗 <span class="hide-mobile">Ver Minha Página</span><span class="show-mobile-only">Página</span></span>
                         </a>
                     <?php endif; ?>
                 </div>

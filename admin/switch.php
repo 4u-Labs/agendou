@@ -116,6 +116,11 @@ if ($currentUserRole === 'superadmin') {
             --purple: #c084fc;
         }
 
+        html, body {
+            max-width: 100vw;
+            overflow-x: hidden;
+        }
+
         body {
             background-color: var(--bg-base);
             background-image: 
@@ -128,11 +133,13 @@ if ($currentUserRole === 'superadmin') {
             min-height: 100vh;
             margin: 0;
             padding: 40px 20px;
+            box-sizing: border-box;
         }
 
         .master-container {
             max-width: 900px;
             margin: 0 auto;
+            width: 100%;
         }
 
         .glass-box {
@@ -142,6 +149,7 @@ if ($currentUserRole === 'superadmin') {
             border-radius: 24px;
             padding: 36px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            box-sizing: border-box;
         }
 
         .level-card {
@@ -156,6 +164,7 @@ if ($currentUserRole === 'superadmin') {
             height: 100%;
             position: relative;
             overflow: hidden;
+            box-sizing: border-box;
         }
         .level-card:hover {
             transform: translateY(-4px);
@@ -197,6 +206,7 @@ if ($currentUserRole === 'superadmin') {
             border: none;
             cursor: pointer;
             margin-top: 18px;
+            box-sizing: border-box;
         }
 
         .btn-super { background: linear-gradient(135deg, #facc15, #eab308); color: #000; }
@@ -234,13 +244,63 @@ if ($currentUserRole === 'superadmin') {
         .status-pill {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--border-glass);
-            padding: 6px 16px;
+            padding: 8px 16px;
             border-radius: 30px;
             font-size: 0.82rem;
             margin-bottom: 24px;
+            max-width: 100%;
+            flex-wrap: wrap;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 20px 12px !important;
+            }
+            .glass-box {
+                padding: 20px 16px !important;
+                border-radius: 18px !important;
+            }
+            h1 {
+                font-size: 1.6rem !important;
+            }
+            .level-card {
+                padding: 18px !important;
+                margin-bottom: 14px;
+            }
+            .table-responsive {
+                overflow-x: visible !important;
+            }
+            .table-responsive table,
+            .table-responsive tbody,
+            .table-responsive tr,
+            .table-responsive td {
+                display: block !important;
+                width: 100% !important;
+            }
+            .table-responsive tr {
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.08) !important;
+                border-radius: 14px;
+                padding: 12px;
+                margin-bottom: 12px;
+            }
+            .table-responsive td {
+                padding: 4px 0 !important;
+                text-align: left !important;
+            }
+            .table-responsive td:last-child {
+                margin-top: 8px;
+            }
+            .table-responsive td:last-child .btn {
+                width: 100%;
+                display: block;
+                padding: 8px 12px !important;
+            }
         }
     </style>
 </head>
@@ -403,6 +463,6 @@ if ($currentUserRole === 'superadmin') {
             });
         }
     </script>
-    <script src="/app/agendou/public/js/pwa-installer.js"></script>
+    <script src="/app/agendou/public/js/pwa-installer.js?v=3.0"></script>
 </body>
 </html>

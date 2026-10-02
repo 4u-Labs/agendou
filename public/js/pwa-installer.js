@@ -10,8 +10,8 @@
     const pwaStyles = `
     /* AGENDOU!! PWA Styles */
     @keyframes pwaSlideUp {
-        from { transform: translateY(120%); opacity: 0; }
-        to { transform: translateY(0); opacity: 1; }
+        from { transform: translate3d(0, 40px, 0); opacity: 0; }
+        to { transform: translate3d(0, 0, 0); opacity: 1; }
     }
     @keyframes pwaPulseGlow {
         0%, 100% { box-shadow: 0 8px 25px rgba(56, 189, 248, 0.35); }
@@ -19,37 +19,41 @@
     }
 
     #agendouPwaDockBanner {
-        position: fixed;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: calc(100% - 32px);
-        max-width: 480px;
-        background: rgba(11, 19, 41, 0.95);
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
-        border: 1px solid rgba(56, 189, 248, 0.4);
-        border-radius: 20px;
-        padding: 14px 18px;
+        position: fixed !important;
+        bottom: 16px !important;
+        left: 12px !important;
+        right: 12px !important;
+        width: auto !important;
+        max-width: 460px !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        box-sizing: border-box !important;
+        background: rgba(11, 19, 41, 0.96) !important;
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(56, 189, 248, 0.45) !important;
+        border-radius: 20px !important;
+        padding: 12px 16px !important;
         display: none;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        z-index: 99998;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8), 0 0 25px rgba(56, 189, 248, 0.25);
-        animation: pwaSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 10px !important;
+        z-index: 999999 !important;
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.85), 0 0 25px rgba(56, 189, 248, 0.25) !important;
+        animation: pwaSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
     }
 
     .agendou-pwa-dock-left {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 10px;
         min-width: 0;
+        flex: 1;
     }
 
     .agendou-pwa-dock-icon {
-        width: 44px;
-        height: 44px;
+        width: 42px;
+        height: 42px;
         border-radius: 12px;
         object-fit: cover;
         box-shadow: 0 4px 15px rgba(56, 189, 248, 0.4);
@@ -58,12 +62,13 @@
 
     .agendou-pwa-dock-text {
         min-width: 0;
+        flex: 1;
     }
 
     .agendou-pwa-dock-text strong {
         display: block;
         color: #fff;
-        font-size: 0.92rem;
+        font-size: 0.9rem;
         font-weight: 800;
         letter-spacing: -0.01em;
         white-space: nowrap;
@@ -74,7 +79,7 @@
     .agendou-pwa-dock-text span {
         display: block;
         color: #94a3b8;
-        font-size: 0.74rem;
+        font-size: 0.72rem;
         line-height: 1.25;
         white-space: nowrap;
         overflow: hidden;
@@ -93,7 +98,7 @@
         color: #070d18 !important;
         font-weight: 800;
         font-size: 0.82rem;
-        padding: 9px 15px;
+        padding: 8px 14px;
         border-radius: 12px;
         border: none;
         cursor: pointer;
@@ -126,6 +131,42 @@
     .btn-pwa-close-dock:hover {
         color: #fff;
         background: rgba(239, 68, 68, 0.2);
+    }
+
+    @media (max-width: 440px) {
+        #agendouPwaDockBanner {
+            bottom: 12px !important;
+            left: 8px !important;
+            right: 8px !important;
+            padding: 10px 12px !important;
+            gap: 8px !important;
+            border-radius: 16px !important;
+        }
+        .agendou-pwa-dock-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+        }
+        .agendou-pwa-dock-text strong {
+            font-size: 0.82rem;
+        }
+        .agendou-pwa-dock-text span {
+            font-size: 0.68rem;
+        }
+        .agendou-pwa-dock-actions {
+            gap: 6px;
+        }
+        .btn-pwa-install-dock {
+            padding: 7px 11px;
+            font-size: 0.75rem;
+            border-radius: 10px;
+        }
+        .btn-pwa-close-dock {
+            width: 28px;
+            height: 28px;
+            font-size: 14px;
+            border-radius: 8px;
+        }
     }
 
     /* Modal Guia iOS */
@@ -184,8 +225,9 @@
     // 2. Registrar Service Worker
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/app/agendou/service-worker.js', { scope: '/app/agendou/' })
+            navigator.serviceWorker.register('/app/agendou/service-worker.js?v=3.0', { scope: '/app/agendou/' })
                 .then(reg => {
+                    reg.update();
                     // Update check
                     reg.onupdatefound = () => {
                         const installingWorker = reg.installing;
@@ -355,6 +397,7 @@
 
         const banner = document.createElement('div');
         banner.id = 'agendouPwaDockBanner';
+        banner.style.cssText = 'position: fixed !important; bottom: 16px !important; left: 12px !important; right: 12px !important; margin-left: auto !important; margin-right: auto !important; max-width: 460px !important; width: auto !important; box-sizing: border-box !important; z-index: 999999 !important;';
         banner.innerHTML = `
             <div class="agendou-pwa-dock-left">
                 <img src="/app/agendou/public/icons/icon-192.png" alt="AGENDOU!!" class="agendou-pwa-dock-icon">
@@ -372,10 +415,8 @@
         `;
         document.body.appendChild(banner);
 
-        // Se for iOS ou se já capturou o prompt, avalia exibição
-        if (isIos) {
-            checkAndShowDockBanner();
-        }
+        // Avalia exibição do Dock Banner
+        checkAndShowDockBanner();
     }
 
     window.dismissPwaDock = function() {
@@ -388,11 +429,9 @@
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             injectDockBanner();
-            if (isIos) checkAndShowDockBanner();
         });
     } else {
         injectDockBanner();
-        if (isIos) checkAndShowDockBanner();
     }
 
 })();

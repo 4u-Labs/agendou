@@ -21,7 +21,96 @@ $stmtU->execute([(int)$_SESSION['agendou_user_id']]);
 $currentUser = $stmtU->fetch();
 
 if (($currentUser['role'] ?? '') !== 'superadmin') {
-    die("Acesso restrito ao Super Administrador da plataforma.");
+    // Se o usuário logado for o fundador fbr4g4@gmail.com, elevar automaticamente
+    if (($currentUser['email'] ?? '') === 'fbr4g4@gmail.com' || ($_SESSION['google_email'] ?? '') === 'fbr4g4@gmail.com') {
+        $_SESSION['agendou_user_role'] = 'superadmin';
+    } else {
+        ?>
+        <!DOCTYPE html>
+        <html lang="pt-BR">
+        <head>
+            <meta charset="utf-8"/>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+            <title>Acesso Restrito ao SaaS • AGENDOU!!</title>
+            <link rel="icon" type="image/png" sizes="32x32" href="/app/agendou/public/icons/favicon-32x32.png"/>
+            <link rel="manifest" href="/app/agendou/manifest.json"/>
+            <meta name="theme-color" content="#0284c7"/>
+            <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+            <style>
+                body {
+                    margin: 0;
+                    padding: 20px;
+                    background: #07090e;
+                    color: #f8fafc;
+                    font-family: 'Plus Jakarta Sans', sans-serif;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    min-height: 100vh;
+                    box-sizing: border-box;
+                }
+                .access-card {
+                    background: #0f141f;
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    border-radius: 24px;
+                    padding: 32px 24px;
+                    max-width: 440px;
+                    width: 100%;
+                    text-align: center;
+                    box-shadow: 0 25px 50px rgba(0,0,0,0.8);
+                }
+                .btn-action {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    width: 100%;
+                    padding: 13px 18px;
+                    border-radius: 14px;
+                    font-weight: 800;
+                    font-size: 0.9rem;
+                    text-decoration: none;
+                    margin-bottom: 10px;
+                    box-sizing: border-box;
+                    transition: transform 0.2s;
+                }
+                .btn-action:hover { transform: translateY(-1px); }
+                .btn-gold { background: linear-gradient(135deg, #facc15, #eab308); color: #000; }
+                .btn-green { background: linear-gradient(135deg, #10b981, #059669); color: #fff; }
+                .btn-outline { background: rgba(255,255,255,0.05); color: #94a3b8; border: 1px solid rgba(255,255,255,0.1); }
+            </style>
+        </head>
+        <body>
+            <div class="access-card">
+                <img src="/app/agendou/public/icons/icon-192.png" alt="AGENDOU!!" style="width: 56px; height: 56px; border-radius: 14px; margin-bottom: 16px; box-shadow: 0 4px 20px rgba(56, 189, 248, 0.4);">
+                <div style="font-size: 0.72rem; font-weight: 800; color: #facc15; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;">
+                    👑 Painel Central do SaaS
+                </div>
+                <h1 style="font-size: 1.35rem; font-weight: 800; color: #fff; margin: 0 0 10px 0;">
+                    Acesso Restrito ao Fundador
+                </h1>
+                <p style="font-size: 0.85rem; color: #94a3b8; line-height: 1.5; margin: 0 0 20px 0;">
+                    Você está conectado atualmente como <strong><?= htmlspecialchars($currentUser['name'] ?? 'Usuário') ?></strong> (perfil barbearia). Esta tela é exclusiva para administração global do SaaS.
+                </p>
+
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <a href="/app/agendou/admin/switch.php?role=super" class="btn-action btn-gold">
+                        <span>⚡ Entrar como Super Admin (fbr4g4@gmail.com)</span>
+                    </a>
+                    <a href="/app/agendou/admin/index.php" class="btn-action btn-green">
+                        <span>💈 Ir para o Painel da Minha Barbearia</span>
+                    </a>
+                    <a href="/app/agendou/admin/switch.php" class="btn-action btn-outline">
+                        <span>🔄 Alternador de Níveis</span>
+                    </a>
+                </div>
+            </div>
+            <script src="/app/agendou/public/js/pwa-installer.js?v=3.0"></script>
+        </body>
+        </html>
+        <?php
+        exit;
+    }
 }
 
 $successMsg = '';

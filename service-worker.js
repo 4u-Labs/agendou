@@ -2,7 +2,7 @@
 // AGENDOU!! - Service Worker (PWA Offline & Asset Caching v2.0)
 // =========================================================================
 
-const CACHE_NAME = 'agendou-cache-v2';
+const CACHE_NAME = 'agendou-cache-v3';
 const STATIC_ASSETS = [
   '/app/agendou/public/css/landing.css',
   '/app/agendou/public/css/booking.css',
@@ -33,6 +33,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
+            console.log('Removendo cache antigo:', key);
             return caches.delete(key);
           }
         })
@@ -71,8 +72,26 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Assets estáticos (CSS, JS, Imagens, Fontes) -> Stale-while-revalidate / Cache first
-  if (url.pathname.match(/\.(css|js|png|jpg|jpeg|svg|webp|ico|woff2|woff|ttf)$/)) {
+  // Scripts e Estilos (CSS, JS) -> Network First com fallback para cache
+  if (url.pathname.match(/\.(css|js)$/)) {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseClone);
+            });
+          }
+          return networkResponse;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Imagens e Fontes estáticas -> Cache First com revalidação
+  if (url.pathname.match(/\.(png|jpg|jpeg|svg|webp|ico|woff2|woff|ttf)$/)) {
     event.respondWith(
       caches.match(event.request).then((cached) => {
         const fetchPromise = fetch(event.request).then((networkResponse) => {

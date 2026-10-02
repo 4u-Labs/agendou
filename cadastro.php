@@ -296,6 +296,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </form>
     </div>
-    <script src="/app/agendou/public/js/pwa-installer.js"></script>
+    <script src="/app/agendou/public/js/pwa-installer.js?v=3.0"></script>
 </body>
 </html>

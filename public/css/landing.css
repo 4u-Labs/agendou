@@ -308,9 +308,60 @@ body {
     color: var(--text-muted);
 }
 
+.show-mobile-only {
+    display: none;
+}
+.hide-mobile {
+    display: inline;
+}
+
 @media (max-width: 768px) {
+    .hide-mobile {
+        display: none !important;
+    }
+    .show-mobile-only {
+        display: inline !important;
+    }
+    .landing-nav {
+        padding: 14px 16px;
+        gap: 8px;
+    }
+    .landing-brand img {
+        width: 32px !important;
+        height: 32px !important;
+    }
+    .brand-text strong {
+        font-size: 1.05rem !important;
+    }
+    .brand-text span {
+        display: none !important;
+    }
+    .nav-links {
+        gap: 8px;
+    }
+    .nav-links .nav-link {
+        display: none !important;
+    }
+    .btn-pwa-install {
+        padding: 6px 10px !important;
+        font-size: 0.74rem !important;
+        white-space: nowrap;
+    }
+    .btn-login-header {
+        padding: 6px 12px !important;
+        font-size: 0.76rem !important;
+        white-space: nowrap;
+    }
+    .landing-hero {
+        margin: 40px auto 30px;
+        padding: 0 16px;
+    }
     .landing-hero h1 {
-        font-size: 2.2rem;
+        font-size: 1.85rem;
+    }
+    .hero-cta-group {
+        flex-direction: column;
+        gap: 12px;
     }
     .hero-stats-strip {
         flex-direction: column;

@@ -9,7 +9,7 @@
 
     <?php include_once __DIR__ . '/tutorial_modal.php'; ?>
 
-    <script src="/app/agendou/public/js/pwa-installer.js"></script>
+    <script src="/app/agendou/public/js/pwa-installer.js?v=3.0"></script>
     <script>
         function toggleAdminSidebar() {
             document.getElementById('adminSidebar')?.classList.toggle('open');

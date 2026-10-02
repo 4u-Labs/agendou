@@ -568,6 +568,6 @@ $googleClientId = $config['google']['client_id'];
             });
         }
     </script>
-    <script src="/app/agendou/public/js/pwa-installer.js"></script>
+    <script src="/app/agendou/public/js/pwa-installer.js?v=3.0"></script>
 </body>
 </html>

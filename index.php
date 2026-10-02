@@ -79,7 +79,7 @@ if ($slug) {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
-    <link href="/app/agendou/public/css/landing.css?v=1.0" rel="stylesheet"/>
+    <link href="/app/agendou/public/css/landing.css?v=2.0" rel="stylesheet"/>
 </head>
 <body>
     <div class="landing-ambient"></div>
@@ -98,7 +98,7 @@ if ($slug) {
             </button>
             <a href="/app/agendou/?slug=pedromendes" class="nav-link">Demonstração</a>
             <a href="/app/agendou/cadastro.php" class="nav-link" style="color: var(--primary); font-weight: 700;">Criar Conta Grátis</a>
-            <a href="/app/agendou/admin/" class="btn-login-header">Entrar no Painel →</a>
+            <a href="/app/agendou/admin/" class="btn-login-header"><span class="hide-mobile">Entrar no Painel </span><span class="show-mobile-only">Entrar </span>→</a>
         </div>
     </nav>
 
@@ -273,6 +273,6 @@ if ($slug) {
         <p>© 2026 AGENDOU!! • Plataforma SaaS de Agendamentos Online • 4U.IA.BR</p>
     </footer>
 
-    <script src="/app/agendou/public/js/pwa-installer.js"></script>
+    <script src="/app/agendou/public/js/pwa-installer.js?v=3.0"></script>
 </body>
 </html>

@@ -65,16 +65,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
     <meta name="apple-mobile-web-app-title" content="AGENDOU!!"/>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="/app/agendou/public/css/landing.css?v=1.0" rel="stylesheet"/>
+    <link href="/app/agendou/public/css/landing.css?v=3.0" rel="stylesheet"/>
     <style>
+        html, body {
+            max-width: 100vw;
+            overflow-x: hidden;
+        }
+        body {
+            box-sizing: border-box;
+            padding: 20px 16px 110px;
+        }
         .login-box {
+            width: 100%;
             max-width: 420px;
-            margin: 60px auto;
+            margin: 20px auto;
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 24px;
-            padding: 32px;
+            padding: 32px 22px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            box-sizing: border-box;
         }
         .form-group { margin-bottom: 18px; }
         .form-label { display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; }
@@ -177,6 +187,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             document.getElementById('loginPassword').value = pass;
         }
     </script>
-    <script src="/app/agendou/public/js/pwa-installer.js"></script>
+    <script src="/app/agendou/public/js/pwa-installer.js?v=3.0"></script>
 </body>
 </html>
