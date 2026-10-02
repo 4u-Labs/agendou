@@ -13,6 +13,18 @@ class GoogleCalendarService {
      */
     public static function getValidAccessToken(int $tenantId): ?string {
         $pdo = Database::getConnection();
+
+        // Plano FREE ou suspenso não possui sincronização com Google Calendar
+        $stmtT = $pdo->prepare("SELECT plan, subscription_status FROM tenants WHERE id = ?");
+        $stmtT->execute([$tenantId]);
+        $tenantData = $stmtT->fetch();
+        $plan = strtolower($tenantData['plan'] ?? 'free');
+        $subStatus = $tenantData['subscription_status'] ?? 'active';
+
+        if ($plan === 'free' || $subStatus === 'suspended') {
+            return null;
+        }
+
         $stmt = $pdo->prepare("SELECT * FROM google_integrations WHERE tenant_id = ? AND sync_enabled = 1");
         $stmt->execute([$tenantId]);
         $integration = $stmt->fetch();

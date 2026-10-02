@@ -23,6 +23,17 @@ if (!$code) {
 }
 
 $tenantId = (int)($state ?: ($_SESSION['admin_tenant_id'] ?? 1));
+
+// Verificar se o plano permite Google Calendar
+$pdo = Database::getConnection();
+$stmtT = $pdo->prepare("SELECT plan FROM tenants WHERE id = ?");
+$stmtT->execute([$tenantId]);
+$plan = strtolower($stmtT->fetchColumn() ?: 'free');
+if ($plan === 'free') {
+    header("Location: /app/agendou/admin/google.php?error=" . urlencode("A sincronização com o Google Calendar é um recurso exclusivo dos planos STARTER e PLUS. Faça upgrade para ativar!"));
+    exit;
+}
+
 $googleCfg = $config['google'];
 
 $postData = [

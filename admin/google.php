@@ -19,11 +19,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['disconnect_google']))
     exit;
 }
 
+// Fetch tenant plan
+$stmtT = $pdo->prepare("SELECT plan FROM tenants WHERE id = ?");
+$stmtT->execute([$tenantId]);
+$tenantPlan = strtolower($stmtT->fetchColumn() ?: 'free');
+$isPlanFree = ($tenantPlan === 'free');
+
 // Fetch integration status
 $stmt = $pdo->prepare("SELECT * FROM google_integrations WHERE tenant_id = ?");
 $stmt->execute([$tenantId]);
 $integration = $stmt->fetch();
-$isConnected = $integration && !empty($integration['access_token']) && $integration['sync_enabled'];
+$isConnected = $integration && !empty($integration['access_token']) && $integration['sync_enabled'] && !$isPlanFree;
 
 // Build OAuth URL
 $oauthParams = [
@@ -44,6 +50,26 @@ $oauthUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query($
         <p>Sincronização bidirecional em tempo real utilizando a API oficial do Google.</p>
     </div>
 </div>
+
+<?php if ($isPlanFree): ?>
+<div class="card-box" style="border-color: rgba(250, 204, 21, 0.4); background: rgba(250, 204, 21, 0.03); margin-bottom: 24px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                <span style="font-size: 1.5rem;">⭐</span>
+                <h3 style="font-size: 1.15rem; color: #facc15; font-weight: 800; margin: 0;">Recurso Exclusivo dos Planos STARTER e PLUS</h3>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); max-width: 600px; margin: 0;">
+                Seu estabelecimento está no <strong>Plano FREE</strong>. A sincronização automática bidirecional com o Google Calendar no celular (adicionar compromissos e bloquear horários pessoais) está disponível a partir do plano <strong>STARTER (R$ 19,90/mês)</strong>.
+            </p>
+        </div>
+        <a href="/app/agendou/admin/subscription.php" class="btn-emerald" style="padding: 12px 20px; font-weight: 800; font-size: 0.88rem;">
+            <span>🚀 Fazer Upgrade para STARTER</span>
+            <span>→</span>
+        </a>
+    </div>
+</div>
+<?php endif; ?>
 
 <?php if (isset($_GET['success'])): ?>
     <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--primary); padding: 14px 18px; border-radius: var(--radius-md); font-size: 0.85rem; margin-bottom: 24px;">
@@ -73,7 +99,7 @@ $oauthUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query($
                     </span>
                 <?php else: ?>
                     <span class="badge-status badge-cancelled" style="font-size: 0.8rem;">
-                        ✕ NÃO CONECTADO
+                        ✕ <?= $isPlanFree ? 'NÃO DISPONÍVEL NO PLANO FREE' : 'NÃO CONECTADO' ?>
                     </span>
                 <?php endif; ?>
             </div>
@@ -85,6 +111,11 @@ $oauthUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query($
                     <input type="hidden" name="disconnect_google" value="1">
                     <button type="submit" class="btn-secondary" style="color: var(--red);">Desconectar Conta Google</button>
                 </form>
+            <?php elseif ($isPlanFree): ?>
+                <a href="/app/agendou/admin/subscription.php" class="btn-primary" style="padding: 12px 20px; font-size: 0.88rem; background: linear-gradient(135deg, #facc15, #eab308); color: #000; font-weight: 800;">
+                    <span>🔒 Liberar no Plano STARTER</span>
+                    <span>→</span>
+                </a>
             <?php else: ?>
                 <a href="<?= htmlspecialchars($oauthUrl) ?>" class="btn-emerald" style="padding: 12px 22px; font-size: 0.9rem;">
                     <span>CONECTAR GOOGLE AGENDA</span>
