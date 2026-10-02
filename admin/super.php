@@ -132,9 +132,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action']) && 
     $t = $stmtT->fetch();
 
     if ($t) {
-        $amount = (float)($t['monthly_price'] ?: 19.90);
+        $isFree = ($t['plan'] === 'free');
+        $amount = $isFree ? 0.00 : (float)($t['monthly_price'] ?: 19.90);
         $baseDate = ($t['next_due_date'] && $t['next_due_date'] > date('Y-m-d')) ? $t['next_due_date'] : date('Y-m-d');
-        $newDueDate = date('Y-m-d', strtotime($baseDate . ' +30 days'));
+        $newDueDate = $isFree ? null : date('Y-m-d', strtotime($baseDate . ' +30 days'));
 
         $stmtUp = $pdo->prepare("
             UPDATE tenants 
@@ -144,13 +145,15 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action']) && 
         ");
         $stmtUp->execute([$newDueDate, $tenantId]);
 
-        // Registrar na tabela invoices
-        $refMonth = date('m/Y');
-        $stmtInv = $pdo->prepare("
-            INSERT INTO invoices (tenant_id, amount, due_date, status, paid_at, reference_month)
-            VALUES (?, ?, ?, 'paid', CURRENT_TIMESTAMP, ?)
-        ");
-        $stmtInv->execute([$tenantId, $amount, $newDueDate, $refMonth]);
+        // Registrar na tabela invoices somente se houver valor ou for plano pago
+        if (!$isFree && $amount > 0) {
+            $refMonth = date('m/Y');
+            $stmtInv = $pdo->prepare("
+                INSERT INTO invoices (tenant_id, amount, due_date, status, paid_at, reference_month)
+                VALUES (?, ?, ?, 'paid', CURRENT_TIMESTAMP, ?)
+            ");
+            $stmtInv->execute([$tenantId, $amount, $newDueDate, $refMonth]);
+        }
 
         header("Location: /app/agendou/admin/super.php?tab=faturas&msg=renewed&tenant=" . urlencode($t['name']) . "#faturas");
         exit;
@@ -160,10 +163,21 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action']) && 
 // 5. ACTION: Editar Dados da Assinatura (Valor e Vencimento)
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_subscription') {
     $tenantId = (int)$_POST['tenant_id'];
-    $monthlyPrice = (float)str_replace(',', '.', $_POST['monthly_price'] ?? 19.90);
-    $nextDueDate = $_POST['next_due_date'] ?? null;
+    $plan = in_array($_POST['plan'] ?? '', ['free', 'starter', 'plus']) ? $_POST['plan'] : 'starter';
+    
+    if ($plan === 'free') {
+        $monthlyPrice = 0.00;
+        $nextDueDate = null;
+    } else {
+        $defaultPrice = ($plan === 'plus') ? 39.90 : 19.90;
+        $monthlyPrice = (float)str_replace(',', '.', $_POST['monthly_price'] ?? $defaultPrice);
+        if ($monthlyPrice <= 0) {
+            $monthlyPrice = $defaultPrice;
+        }
+        $nextDueDate = !empty($_POST['next_due_date']) ? $_POST['next_due_date'] : null;
+    }
+
     $subStatus = $_POST['subscription_status'] ?? 'active';
-    $plan = $_POST['plan'] ?? 'starter';
     $pixKey = trim($_POST['pix_key'] ?? 'contato@4u.ia.br');
 
     $sysStatus = ($subStatus === 'suspended') ? 'suspended' : 'active';
@@ -191,9 +205,15 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action']) && 
     $city = trim($_POST['city'] ?? '');
     $state = strtoupper(trim($_POST['state'] ?? ''));
     $plan = in_array($_POST['plan'] ?? '', ['free', 'starter', 'plus']) ? $_POST['plan'] : 'starter';
-    $defaultPrice = ($plan === 'plus') ? 39.90 : (($plan === 'free') ? 0.00 : 19.90);
-    $monthlyPrice = (float)str_replace(',', '.', $_POST['monthly_price'] ?? $defaultPrice);
-    $nextDueDate = $_POST['next_due_date'] ?: date('Y-m-d', strtotime('+30 days'));
+    if ($plan === 'free') {
+        $monthlyPrice = 0.00;
+        $nextDueDate = null;
+    } else {
+        $defaultPrice = ($plan === 'plus') ? 39.90 : 19.90;
+        $monthlyPrice = (float)str_replace(',', '.', $_POST['monthly_price'] ?? $defaultPrice);
+        if ($monthlyPrice <= 0) $monthlyPrice = $defaultPrice;
+        $nextDueDate = !empty($_POST['next_due_date']) ? $_POST['next_due_date'] : date('Y-m-d', strtotime('+30 days'));
+    }
 
     $adminName = trim($_POST['admin_name'] ?? '');
     if (!$adminName) $adminName = "Responsável " . $name;
@@ -286,14 +306,14 @@ $today = date('Y-m-d');
 // 1. Total de estabelecimentos
 $totalTenants = (int)$pdo->query("SELECT COUNT(*) FROM tenants")->fetchColumn();
 
-// 2. Receita Recorrente Mensal (MRR)
-$totalMRR = (float)$pdo->query("SELECT SUM(monthly_price) FROM tenants WHERE subscription_status != 'suspended'")->fetchColumn();
+// 2. Receita Recorrente Mensal (MRR) - planos pagos não suspensos
+$totalMRR = (float)$pdo->query("SELECT SUM(monthly_price) FROM tenants WHERE subscription_status != 'suspended' AND plan != 'free'")->fetchColumn();
 
-// 3. Assinantes em dia
-$activeTenants = (int)$pdo->query("SELECT COUNT(*) FROM tenants WHERE subscription_status = 'active' AND (next_due_date IS NULL OR next_due_date >= '$today')")->fetchColumn();
+// 3. Assinantes em dia (inclui planos free ativos e planos pagos em dia)
+$activeTenants = (int)$pdo->query("SELECT COUNT(*) FROM tenants WHERE subscription_status = 'active' AND (plan = 'free' OR next_due_date IS NULL OR next_due_date >= '$today')")->fetchColumn();
 
-// 4. Em atraso (vencidos mas ainda no prazo de carência ou aguardando pagamento)
-$pastDueTenants = (int)$pdo->query("SELECT COUNT(*) FROM tenants WHERE (subscription_status = 'past_due' OR (subscription_status = 'active' AND next_due_date < '$today')) AND subscription_status != 'suspended'")->fetchColumn();
+// 4. Em atraso (apenas planos pagos!)
+$pastDueTenants = (int)$pdo->query("SELECT COUNT(*) FROM tenants WHERE plan != 'free' AND (subscription_status = 'past_due' OR (subscription_status = 'active' AND next_due_date < '$today')) AND subscription_status != 'suspended'")->fetchColumn();
 
 // 5. Cortados / Suspensos
 $suspendedTenants = (int)$pdo->query("SELECT COUNT(*) FROM tenants WHERE subscription_status = 'suspended' OR status = 'suspended'")->fetchColumn();
@@ -310,10 +330,10 @@ $tenants = $pdo->query("
     ORDER BY 
         CASE 
             WHEN t.subscription_status = 'suspended' THEN 1
-            WHEN t.next_due_date < '$today' THEN 2
+            WHEN t.plan != 'free' AND t.next_due_date < '$today' THEN 2
             ELSE 3
         END,
-        t.next_due_date ASC
+        t.id ASC
 ")->fetchAll();
 
 // 7. Lista Específica de Inadimplentes e Cortados
@@ -321,9 +341,11 @@ $inadimplentesList = [];
 foreach ($tenants as $t) {
     $subStatus = $t['subscription_status'] ?? 'active';
     $sysStatus = $t['status'] ?? 'active';
+    $isFreePlan = ($t['plan'] === 'free' || (float)$t['monthly_price'] <= 0);
     $dueDate = $t['next_due_date'];
-    $isPast = ($dueDate && $dueDate < $today);
-    if ($subStatus === 'suspended' || $sysStatus === 'suspended' || $subStatus === 'past_due' || $isPast) {
+    $isPast = (!$isFreePlan && $dueDate && $dueDate < $today);
+    // Planos FREE só entram aqui se estiverem suspensos/bloqueados pela moderação
+    if ($subStatus === 'suspended' || $sysStatus === 'suspended' || (!$isFreePlan && ($subStatus === 'past_due' || $isPast))) {
         $inadimplentesList[] = $t;
     }
 }
@@ -517,6 +539,7 @@ require_once __DIR__ . '/header.php';
                         $subStatus = $t['subscription_status'] ?? 'active';
                         $sysStatus = $t['status'] ?? 'active';
                         $isSuspended = ($subStatus === 'suspended' || $sysStatus === 'suspended');
+                        $isFreePlan = ($t['plan'] === 'free' || (float)$t['monthly_price'] <= 0);
                         $dueDate = $t['next_due_date'];
                         
                         $diff = 0;
@@ -526,13 +549,13 @@ require_once __DIR__ . '/header.php';
                         $cleanWa = preg_replace('/\D/', '', $t['whatsapp']);
                         $waOwner = $t['owner_name'] ?: $t['name'];
                         $dueDateFormatted = $dueDate ? date('d/m/Y', strtotime($dueDate)) : 'a regularizar';
-                        $valFormatted = number_format((float)($t['monthly_price'] ?: 19.90), 2, ',', '.');
+                        $valFormatted = $isFreePlan ? 'Gratuito' : ('R$ ' . number_format((float)$t['monthly_price'], 2, ',', '.'));
                         $pixKeyToPay = $t['pix_key'] ?: $defaultPixKey;
 
-                        $cobrancaMsg = urlencode("Olá {$waOwner}! Tudo bem?\nPassando para lembrar da mensalidade do sistema AGENDOU da *{$t['name']}*.\n\n📅 *Vencimento:* {$dueDateFormatted}\n💰 *Valor:* R$ {$valFormatted}\n🔑 *Chave PIX:* {$pixKeyToPay}\n\nAssim que efetuar o pagamento via PIX, nos envie o comprovante para manter seus agendamentos ativos. Obrigado! 👍");
+                        $cobrancaMsg = urlencode("Olá {$waOwner}! Tudo bem?\nPassando para lembrar da mensalidade do sistema AGENDOU da *{$t['name']}*.\n\n📅 *Vencimento:* {$dueDateFormatted}\n💰 *Valor:* {$valFormatted}\n🔑 *Chave PIX:* {$pixKeyToPay}\n\nAssim que efetuar o pagamento via PIX, nos envie o comprovante para manter seus agendamentos ativos. Obrigado! 👍");
                         $waCobrancaUrl = "https://wa.me/55{$cleanWa}?text={$cobrancaMsg}";
 
-                        $avisoCorteMsg = urlencode("⚠️ *AVISO IMPORTANTE - AGENDOU*\n\nOlá {$waOwner}! Informamos que o sistema de agendamento online da *{$t['name']}* foi temporariamente suspenso devido à mensalidade pendente ({$dueDateFormatted}).\n\n💰 *Valor:* R$ {$valFormatted}\n🔑 *Chave PIX:* {$pixKeyToPay}\n\nPara reativar sua agenda e o link dos clientes imediatamente, basta enviar o comprovante de pagamento por aqui. Estamos no aguardo!");
+                        $avisoCorteMsg = urlencode("⚠️ *AVISO IMPORTANTE - AGENDOU*\n\nOlá {$waOwner}! Informamos que o sistema de agendamento online da *{$t['name']}* foi temporariamente suspenso.\n\nPara reativar sua agenda e o link dos clientes imediatamente, entre em contato conosco por aqui!");
                         $waCorteUrl = "https://wa.me/55{$cleanWa}?text={$avisoCorteMsg}";
                     ?>
                         <tr style="background: rgba(239, 68, 68, 0.06); border-left: 4px solid var(--red);">
@@ -547,14 +570,24 @@ require_once __DIR__ . '/header.php';
                                 <span style="font-size: 0.75rem; color: var(--text-secondary);"><?= htmlspecialchars($t['owner_name'] ?: 'Proprietário') ?></span>
                             </td>
                             <td>
-                                <strong style="color: #facc15; font-size: 0.95rem;">R$ <?= $valFormatted ?></strong><br>
-                                <span class="badge-status badge-confirmed" style="font-size: 0.65rem;">PLANO <?= strtoupper($t['plan']) ?></span>
+                                <?php if ($isFreePlan): ?>
+                                    <strong style="color: #10b981; font-size: 0.95rem;">Gratuito</strong><br>
+                                    <span class="badge-status" style="font-size: 0.65rem; padding: 2px 6px; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);">PLANO FREE</span>
+                                <?php else: ?>
+                                    <strong style="color: #facc15; font-size: 0.95rem;"><?= $valFormatted ?></strong><br>
+                                    <span class="badge-status badge-confirmed" style="font-size: 0.65rem;">PLANO <?= strtoupper($t['plan']) ?></span>
+                                <?php endif; ?>
                             </td>
                             <td>
-                                <strong style="color: #fff; font-size: 0.88rem;"><?= $dueDateFormatted ?></strong><br>
-                                <span style="color: var(--red); font-size: 0.75rem; font-weight: 700;">
-                                    <?= $diff < 0 ? "Venceu há " . abs($diff) . " dia(s)" : "Vence HOJE" ?>
-                                </span>
+                                <?php if ($isFreePlan): ?>
+                                    <strong style="color: var(--text-muted); font-size: 0.88rem;">--</strong><br>
+                                    <span style="color: #10b981; font-size: 0.75rem; font-weight: 700;">Isento</span>
+                                <?php else: ?>
+                                    <strong style="color: #fff; font-size: 0.88rem;"><?= $dueDateFormatted ?></strong><br>
+                                    <span style="color: var(--red); font-size: 0.75rem; font-weight: 700;">
+                                        <?= $diff < 0 ? "Venceu há " . abs($diff) . " dia(s)" : "Vence HOJE" ?>
+                                    </span>
+                                <?php endif; ?>
                             </td>
                             <td>
                                 <?php if ($isSuspended): ?>
@@ -644,11 +677,12 @@ require_once __DIR__ . '/header.php';
                     $subStatus = $t['subscription_status'] ?? 'active';
                     $sysStatus = $t['status'] ?? 'active';
                     $isSuspended = ($subStatus === 'suspended' || $sysStatus === 'suspended');
+                    $isFreePlan = ($t['plan'] === 'free' || (float)$t['monthly_price'] <= 0);
                     $dueDate = $t['next_due_date'];
                     
                     $isOverdue = false;
                     $daysText = '';
-                    if ($dueDate) {
+                    if (!$isFreePlan && $dueDate) {
                         $diff = (int)((strtotime($dueDate) - strtotime($today)) / 86400);
                         if ($diff < 0) {
                             $isOverdue = true;
@@ -658,15 +692,21 @@ require_once __DIR__ . '/header.php';
                         } else {
                             $daysText = "Vence em {$diff} dia(s)";
                         }
+                    } elseif ($isFreePlan) {
+                        $daysText = "Sem mensalidade";
                     }
 
                     $cleanWa = preg_replace('/\D/', '', $t['whatsapp']);
                     $waOwner = $t['owner_name'] ?: $t['name'];
                     $dueDateFormatted = $dueDate ? date('d/m/Y', strtotime($dueDate)) : 'a regularizar';
-                    $valFormatted = number_format((float)($t['monthly_price'] ?: 19.90), 2, ',', '.');
+                    $valFormatted = $isFreePlan ? 'Gratuito' : ('R$ ' . number_format((float)$t['monthly_price'], 2, ',', '.'));
                     $pixKeyToPay = $t['pix_key'] ?: $defaultPixKey;
 
-                    $cobrancaMsg = urlencode("Olá {$waOwner}! Tudo bem?\nPassando para lembrar da mensalidade do sistema AGENDOU da *{$t['name']}*.\n\n📅 *Vencimento:* {$dueDateFormatted}\n💰 *Valor:* R$ {$valFormatted}\n🔑 *Chave PIX:* {$pixKeyToPay}\n\nAssim que efetuar o pagamento via PIX, nos envie o comprovante para manter seus agendamentos ativos. Obrigado! 👍");
+                    if ($isFreePlan) {
+                        $cobrancaMsg = urlencode("Olá {$waOwner}! Tudo bem?\nPassando para acompanhar seu uso do sistema AGENDOU da *{$t['name']}* (Plano Gratuito).\n\nQualquer dúvida ou caso queira fazer upgrade para recursos ilimitados e Google Agenda, conte conosco! 👍");
+                    } else {
+                        $cobrancaMsg = urlencode("Olá {$waOwner}! Tudo bem?\nPassando para lembrar da mensalidade do sistema AGENDOU da *{$t['name']}*.\n\n📅 *Vencimento:* {$dueDateFormatted}\n💰 *Valor:* {$valFormatted}\n🔑 *Chave PIX:* {$pixKeyToPay}\n\nAssim que efetuar o pagamento via PIX, nos envie o comprovante para manter seus agendamentos ativos. Obrigado! 👍");
+                    }
                     $waCobrancaUrl = "https://wa.me/55{$cleanWa}?text={$cobrancaMsg}";
                 ?>
                     <tr style="<?= $isSuspended ? 'background: rgba(239, 68, 68, 0.05);' : '' ?>">
@@ -686,21 +726,35 @@ require_once __DIR__ . '/header.php';
                             <span style="font-size: 0.75rem; color: var(--text-secondary);"><?= htmlspecialchars($t['owner_name'] ?: 'Proprietário') ?></span>
                         </td>
                         <td>
-                            <strong style="color: #facc15; font-size: 0.95rem;">R$ <?= $valFormatted ?></strong><br>
-                            <span class="badge-status badge-confirmed" style="font-size: 0.65rem; padding: 2px 6px;">PLANO <?= strtoupper($t['plan']) ?></span>
+                            <?php if ($isFreePlan): ?>
+                                <strong style="color: #10b981; font-size: 0.95rem;">Gratuito</strong><br>
+                                <span class="badge-status" style="font-size: 0.65rem; padding: 2px 6px; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);">PLANO FREE</span>
+                            <?php else: ?>
+                                <strong style="color: #facc15; font-size: 0.95rem;"><?= $valFormatted ?></strong><br>
+                                <span class="badge-status badge-confirmed" style="font-size: 0.65rem; padding: 2px 6px;">PLANO <?= strtoupper($t['plan']) ?></span>
+                            <?php endif; ?>
                         </td>
                         <td>
-                            <strong style="color: #fff; font-size: 0.88rem;">
-                                <?= $dueDate ? date('d/m/Y', strtotime($dueDate)) : '--' ?>
-                            </strong><br>
-                            <span style="font-size: 0.72rem; color: <?= $isOverdue ? '#ef4444' : 'var(--primary)' ?>; font-weight: 600;">
-                                <?= $daysText ?>
-                            </span>
+                            <?php if ($isFreePlan): ?>
+                                <strong style="color: var(--text-muted); font-size: 0.88rem;">--</strong><br>
+                                <span style="font-size: 0.72rem; color: #10b981; font-weight: 600;">Isento (Gratuito)</span>
+                            <?php else: ?>
+                                <strong style="color: #fff; font-size: 0.88rem;">
+                                    <?= $dueDate ? date('d/m/Y', strtotime($dueDate)) : '--' ?>
+                                </strong><br>
+                                <span style="font-size: 0.72rem; color: <?= $isOverdue ? '#ef4444' : 'var(--primary)' ?>; font-weight: 600;">
+                                    <?= $daysText ?>
+                                </span>
+                            <?php endif; ?>
                         </td>
                         <td>
                             <?php if ($isSuspended): ?>
                                 <span class="badge-status badge-cancelled" style="font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px;">
                                     <span>🚫</span> CORTADO / BLOQUEADO
+                                </span>
+                            <?php elseif ($isFreePlan): ?>
+                                <span class="badge-status badge-confirmed" style="font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);">
+                                    <span>🟢</span> GRATUITO
                                 </span>
                             <?php elseif ($isOverdue): ?>
                                 <span class="badge-status badge-pending" style="font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px;">
@@ -714,31 +768,33 @@ require_once __DIR__ . '/header.php';
                         </td>
                         <td>
                             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                                <a href="<?= $waCobrancaUrl ?>" target="_blank" class="btn-secondary" style="padding: 5px 8px; font-size: 0.72rem; color: #25d366; text-decoration: none;" title="Mensagem no WhatsApp">
+                                <a href="<?= $waCobrancaUrl ?>" target="_blank" class="btn-secondary" style="padding: 5px 8px; font-size: 0.72rem; color: #25d366; text-decoration: none;" title="<?= $isFreePlan ? 'Mensagem no WhatsApp de acompanhamento' : 'Cobrança via WhatsApp' ?>">
                                     💬
                                 </a>
 
                                 <?php if ($isSuspended): ?>
-                                    <form method="POST" style="display: inline;" onsubmit="return confirm('Deseja reativar esta barbearia por +30 dias?');">
+                                    <form method="POST" style="display: inline;" onsubmit="return confirm('Deseja reativar esta barbearia?');">
                                         <input type="hidden" name="action" value="renew_tenant">
                                         <input type="hidden" name="tenant_id" value="<?= $t['id'] ?>">
-                                        <button type="submit" class="btn-emerald" style="padding: 5px 10px; font-size: 0.72rem; font-weight: 800;" title="Reativar e renovar">
-                                            ✓ Reativar (+30d)
+                                        <button type="submit" class="btn-emerald" style="padding: 5px 10px; font-size: 0.72rem; font-weight: 800;" title="Reativar barbearia">
+                                            ✓ Reativar
                                         </button>
                                     </form>
                                 <?php else: ?>
-                                    <form method="POST" style="display: inline;" onsubmit="return confirm('Confirmar pagamento desta barbearia e renovar por +30 dias?');">
-                                        <input type="hidden" name="action" value="renew_tenant">
-                                        <input type="hidden" name="tenant_id" value="<?= $t['id'] ?>">
-                                        <button type="submit" class="btn-emerald" style="padding: 5px 8px; font-size: 0.72rem; font-weight: 800;" title="Quitar mensalidade">
-                                            ✓ Pago
-                                        </button>
-                                    </form>
+                                    <?php if (!$isFreePlan): ?>
+                                        <form method="POST" style="display: inline;" onsubmit="return confirm('Confirmar pagamento desta barbearia e renovar por +30 dias?');">
+                                            <input type="hidden" name="action" value="renew_tenant">
+                                            <input type="hidden" name="tenant_id" value="<?= $t['id'] ?>">
+                                            <button type="submit" class="btn-emerald" style="padding: 5px 8px; font-size: 0.72rem; font-weight: 800;" title="Quitar mensalidade">
+                                                ✓ Pago
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
 
                                     <form method="POST" style="display: inline;" onsubmit="return confirm('Deseja realmente CORTAR o sistema desta barbearia agora?');">
                                         <input type="hidden" name="action" value="suspend_tenant">
                                         <input type="hidden" name="tenant_id" value="<?= $t['id'] ?>">
-                                        <input type="hidden" name="reason" value="Mensalidade vencida">
+                                        <input type="hidden" name="reason" value="<?= $isFreePlan ? 'Suspenso pela administração' : 'Mensalidade vencida' ?>">
                                         <button type="submit" class="btn-secondary" style="padding: 5px 8px; font-size: 0.72rem; color: var(--red);" title="Cortar sistema imediatamente">
                                             🚫 Cortar
                                         </button>
@@ -955,7 +1011,7 @@ require_once __DIR__ . '/header.php';
                 <div class="form-group">
                     <label class="form-label" style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 4px;">Plano</label>
                     <select name="plan" id="selectNewPlan" class="form-input" onchange="autoPlanPrice(this.value)" style="width: 100%; background: #18181b; border: 1px solid var(--border-color); border-radius: 10px; padding: 10px 14px; color: #fff;">
-                        <option value="free">FREE — R$ 0,00</option>
+                        <option value="free">FREE — R$ 0,00 (Gratuito)</option>
                         <option value="starter" selected>🚀 STARTER — R$ 19,90/mês</option>
                         <option value="plus">⭐ PLUS — R$ 39,90/mês</option>
                     </select>
@@ -963,10 +1019,11 @@ require_once __DIR__ . '/header.php';
                 <div class="form-group">
                     <label class="form-label" style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 4px;">Valor Mensalidade (R$)</label>
                     <input type="text" name="monthly_price" id="inputNewPrice" value="19,90" class="form-input" style="width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px 14px; color: #fff;">
+                    <div id="newPriceHint" style="margin-top: 4px; font-size: 0.72rem;"></div>
                 </div>
                 <div class="form-group">
                     <label class="form-label" style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 4px;">1º Vencimento</label>
-                    <input type="date" name="next_due_date" value="<?= date('Y-m-d', strtotime('+30 days')) ?>" class="form-input" style="width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px 14px; color: #fff;">
+                    <input type="date" name="next_due_date" id="inputNewDueDate" value="<?= date('Y-m-d', strtotime('+30 days')) ?>" class="form-input" style="width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px 14px; color: #fff;">
                 </div>
             </div>
 
@@ -1013,12 +1070,17 @@ require_once __DIR__ . '/header.php';
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
                 <div>
-                    <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 4px;">Valor Mensal (R$)</label>
-                    <input type="text" name="monthly_price" id="editMonthlyPrice" required style="width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 12px; color: #fff;">
+                    <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 4px;">Plano</label>
+                    <select name="plan" id="editPlan" onchange="autoPlanPriceEdit(this.value)" style="width: 100%; background: #18181b; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 12px; color: #fff;">
+                        <option value="free">FREE (Gratuito - R$ 0,00)</option>
+                        <option value="starter">STARTER (R$ 19,90/mês)</option>
+                        <option value="plus">PLUS (R$ 39,90/mês)</option>
+                    </select>
                 </div>
                 <div>
-                    <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 4px;">Próximo Vencimento</label>
-                    <input type="date" name="next_due_date" id="editNextDueDate" required style="width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 12px; color: #fff;">
+                    <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 4px;">Valor Mensal (R$)</label>
+                    <input type="text" name="monthly_price" id="editMonthlyPrice" required style="width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 12px; color: #fff;">
+                    <div id="editPriceHint" style="margin-top: 4px; font-size: 0.72rem;"></div>
                 </div>
             </div>
 
@@ -1032,12 +1094,9 @@ require_once __DIR__ . '/header.php';
                     </select>
                 </div>
                 <div>
-                    <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 4px;">Plano</label>
-                    <select name="plan" id="editPlan" onchange="autoPlanPriceEdit(this.value)" style="width: 100%; background: #18181b; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 12px; color: #fff;">
-                        <option value="free">FREE (R$ 0,00)</option>
-                        <option value="starter">STARTER (R$ 19,90)</option>
-                        <option value="plus">PLUS (R$ 39,90)</option>
-                    </select>
+                    <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 4px;">Próximo Vencimento</label>
+                    <input type="date" name="next_due_date" id="editNextDueDate" style="width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 12px; color: #fff;">
+                    <div id="editDueDateHint" style="margin-top: 4px; font-size: 0.72rem; color: var(--text-muted);"></div>
                 </div>
             </div>
 
@@ -1069,26 +1128,83 @@ function autoSlug(val) {
 
 function autoPlanPrice(p) {
     const input = document.getElementById('inputNewPrice');
-    if (p === 'free') input.value = '0,00';
-    else if (p === 'starter') input.value = '19,90';
-    else if (p === 'plus') input.value = '39,90';
+    const hint = document.getElementById('newPriceHint');
+    const due = document.getElementById('inputNewDueDate');
+    if (p === 'free') {
+        input.value = '0,00';
+        if (hint) hint.innerHTML = '<span style="color: #10b981; font-weight: 700;">✓ Gratuito — Sem cobrança</span>';
+        if (due) due.value = '';
+    } else if (p === 'starter') {
+        input.value = '19,90';
+        if (hint) hint.innerHTML = '';
+        if (due && !due.value) due.value = '<?= date('Y-m-d', strtotime('+30 days')) ?>';
+    } else if (p === 'plus') {
+        input.value = '39,90';
+        if (hint) hint.innerHTML = '';
+        if (due && !due.value) due.value = '<?= date('Y-m-d', strtotime('+30 days')) ?>';
+    }
 }
 
 function autoPlanPriceEdit(p) {
     const input = document.getElementById('editMonthlyPrice');
-    if (p === 'free') input.value = '0,00';
-    else if (p === 'starter') input.value = '19,90';
-    else if (p === 'plus') input.value = '39,90';
+    if (p === 'free') {
+        input.value = '0,00';
+    } else if (p === 'starter') {
+        input.value = '19,90';
+    } else if (p === 'plus') {
+        input.value = '39,90';
+    }
+    handleEditPlanUI(p);
+}
+
+function handleEditPlanUI(p) {
+    const priceInput = document.getElementById('editMonthlyPrice');
+    const priceHint = document.getElementById('editPriceHint');
+    const dueDateInput = document.getElementById('editNextDueDate');
+    const dueHint = document.getElementById('editDueDateHint');
+    if (p === 'free') {
+        priceInput.value = '0,00';
+        if (priceHint) priceHint.innerHTML = '<span style="color: #10b981; font-weight: 700;">✓ Gratuito (Isento de mensalidade)</span>';
+        if (dueDateInput) {
+            dueDateInput.removeAttribute('required');
+        }
+        if (dueHint) dueHint.innerHTML = '<span style="color: #10b981;">Isento para plano FREE</span>';
+    } else {
+        if (priceHint) priceHint.innerHTML = '';
+        if (dueDateInput) {
+            dueDateInput.setAttribute('required', 'required');
+            if (!dueDateInput.value) {
+                const d = new Date();
+                d.setDate(d.getDate() + 30);
+                dueDateInput.value = d.toISOString().split('T')[0];
+            }
+        }
+        if (dueHint) dueHint.innerHTML = '';
+    }
 }
 
 function openEditModal(tenant) {
     document.getElementById('editTenantId').value = tenant.id;
     document.getElementById('editTenantName').value = '#' + tenant.id + ' - ' + tenant.name;
-    document.getElementById('editMonthlyPrice').value = (tenant.monthly_price || 19.90).toFixed(2).replace('.', ',');
-    document.getElementById('editNextDueDate').value = tenant.next_due_date || '';
+    const plan = tenant.plan || 'starter';
+    document.getElementById('editPlan').value = plan;
+    
+    let price = 0;
+    if (plan === 'free') {
+        price = 0;
+    } else if (tenant.monthly_price !== null && tenant.monthly_price !== undefined && tenant.monthly_price !== '') {
+        price = parseFloat(tenant.monthly_price);
+        if (price <= 0) price = (plan === 'plus' ? 39.90 : 19.90);
+    } else {
+        price = (plan === 'plus' ? 39.90 : 19.90);
+    }
+
+    document.getElementById('editMonthlyPrice').value = price.toFixed(2).replace('.', ',');
+    document.getElementById('editNextDueDate').value = (plan === 'free' ? '' : (tenant.next_due_date || ''));
     document.getElementById('editSubStatus').value = tenant.subscription_status || 'active';
-    document.getElementById('editPlan').value = tenant.plan || 'starter';
     document.getElementById('editPixKey').value = tenant.pix_key || '<?= addslashes($defaultPixKey) ?>';
+    
+    handleEditPlanUI(plan);
     document.getElementById('modalEditSub').style.display = 'flex';
 }
 
