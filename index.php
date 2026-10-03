@@ -185,15 +185,19 @@ if ($slug) {
                         Ideal para autônomos que querem organizar a agenda sem custos. Sem cartão de crédito.
                     </p>
 
-                    <ul style="list-style: none; display: flex; flex-direction: column; gap: 12px; font-size: 0.88rem; color: #e2e8f0; margin-bottom: 30px;">
+                    <ul style="list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 0.84rem; color: #e2e8f0; margin-bottom: 28px; line-height: 1.4;">
                         <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> <strong>30 agendamentos / mês</strong></li>
-                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> 1 profissional</li>
-                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> 5 serviços</li>
+                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> 1 profissional (o próprio dono)</li>
+                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> Até 5 serviços no catálogo</li>
                         <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> Página pública de agendamento</li>
-                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> Link personalizado & QR Code</li>
+                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> Link de agendamento & QR Code padrão</li>
                         <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> Botão WhatsApp em cada agendamento</li>
                         <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> Agenda interna (balcão/telefone)</li>
-                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> Cadastro de clientes & Lembretes</li>
+                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> Cadastro básico de clientes</li>
+                        <li style="display: flex; align-items: center; gap: 8px; color: var(--text-muted);"><span style="color: #ef4444;">✕</span> Sem Google Calendar no celular</li>
+                        <li style="display: flex; align-items: center; gap: 8px; color: var(--text-muted);"><span style="color: #ef4444;">✕</span> Sem controle financeiro / comissões</li>
+                        <li style="display: flex; align-items: center; gap: 8px; color: var(--text-muted);"><span style="color: #ef4444;">✕</span> Sem reagendamento online pelo cliente</li>
+                        <li style="display: flex; align-items: center; gap: 8px; color: var(--text-muted);"><span style="color: #ef4444;">✕</span> Horário de atendimento fixo</li>
                     </ul>
                 </div>
                 <a href="/app/agendou/cadastro.php?plan=free" class="btn-secondary" style="width: 100%; text-align: center; justify-content: center; padding: 14px; font-weight: 700; text-decoration: none; border-radius: 12px;">
@@ -214,15 +218,19 @@ if ($slug) {
                         Para profissionais que buscam automação com Google Calendar e mais clientes.
                     </p>
 
-                    <ul style="list-style: none; display: flex; flex-direction: column; gap: 12px; font-size: 0.88rem; color: #e2e8f0; margin-bottom: 30px;">
+                    <ul style="list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 0.84rem; color: #e2e8f0; margin-bottom: 28px; line-height: 1.4;">
                         <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> <strong>150 agendamentos / mês</strong></li>
-                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> <strong>Até 3 profissionais</strong></li>
+                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> <strong>Até 3 profissionais / cadeiras</strong></li>
                         <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> <strong>Serviços ilimitados</strong></li>
-                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> <strong>Google Calendar nativo</strong></li>
-                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> Lembretes 2h e 15m antes</li>
+                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> <strong>Google Calendar nativo (celular)</strong></li>
+                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> <strong>Link curto exclusivo 4u.ia.br/sua-marca</strong></li>
+                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> <strong>Reagendamento & cancelamento online</strong></li>
+                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> Lembretes automáticos 2h e 15m antes</li>
+                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> <strong>Painel financeiro com faturamento diário</strong></li>
+                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> <strong>Pausas de almoço e bloqueio de horários</strong></li>
                         <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> Botão WhatsApp em cada atendimento</li>
-                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> Reagendamento e cancelamento</li>
-                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> Dashboard com faturamento e relatórios</li>
+                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> <strong>Assinatura Recorrente Automática (Cartão/PIX)</strong></li>
+                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> Suporte rápido via WhatsApp</li>
                     </ul>
                 </div>
                 <a href="/app/agendou/cadastro.php?plan=starter" class="btn-primary" style="width: 100%; text-align: center; justify-content: center; padding: 14px; font-weight: 800; text-decoration: none; border-radius: 12px; background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.5); color: #fff;">
@@ -246,15 +254,19 @@ if ($slug) {
                         Para barbearias e clínicas completas que exigem recursos ilimitados e máxima gestão.
                     </p>
 
-                    <ul style="list-style: none; display: flex; flex-direction: column; gap: 12px; font-size: 0.88rem; color: #e2e8f0; margin-bottom: 30px;">
-                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> <strong>500 agendamentos / mês</strong></li>
-                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> <strong>Profissionais ilimitados</strong></li>
-                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> <strong>Serviços & Clientes ilimitados</strong></li>
-                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> <strong>Google Calendar nativo duplo</strong></li>
+                    <ul style="list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 0.84rem; color: #e2e8f0; margin-bottom: 28px; line-height: 1.4;">
+                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> <strong>500 agendamentos / mês (alta capacidade)</strong></li>
+                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> <strong>Profissionais & cadeiras ilimitados</strong></li>
+                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> <strong>Serviços, clientes e histórico ilimitados</strong></li>
+                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> <strong>Google Calendar Multi-agendas (por profissional)</strong></li>
+                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> <strong>Link curto 4u.ia.br + QR Code Balcão VIP</strong></li>
+                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> <strong>Reagendamento inteligente com reposição de vaga</strong></li>
                         <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> Lembretes automáticos 2h e 15m antes</li>
-                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> Bloqueio de horários & Folgas</li>
-                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> Múltiplos calendários e unidades</li>
-                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> Gestão financeira & Faturamento</li>
+                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> <strong>Financeiro completo com comissões por barbeiro</strong></li>
+                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> <strong>Escala flexível: folgas, férias e turnos por equipe</strong></li>
+                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> Múltiplos calendários e unidades/filiais</li>
+                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> <strong>Assinatura Recorrente Automática (Cartão/PIX)</strong></li>
+                        <li style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary);">✓</span> <strong>Suporte Prioritário VIP 4U.IA.BR</strong></li>
                     </ul>
                 </div>
                 <a href="/app/agendou/cadastro.php?plan=plus" class="btn-cta-primary" style="width: 100%; text-align: center; justify-content: center; padding: 14px; font-weight: 900; text-decoration: none; border-radius: 12px;">

@@ -151,15 +151,18 @@ $invoices = $stmtInv->fetchAll();
                     R$ 0 <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">/ grátis</span>
                 </div>
 
-                <ul style="list-style: none; padding: 0; margin: 0 0 24px 0; font-size: 0.82rem; color: var(--text-secondary); line-height: 2;">
+                <ul style="list-style: none; padding: 0; margin: 0 0 24px 0; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.9;">
                     <li>✓ <strong>30 agendamentos</strong> / mês</li>
-                    <li>✓ <strong>1 profissional</strong></li>
-                    <li>✓ <strong>5 serviços</strong></li>
+                    <li>✓ <strong>1 profissional</strong> (o próprio dono)</li>
+                    <li>✓ Até 5 serviços no catálogo</li>
                     <li>✓ Página pública de agendamento</li>
-                    <li>✓ Link personalizado & QR Code</li>
-                    <li>✓ Notificações WhatsApp</li>
+                    <li>✓ Link personalizado & QR Code padrão</li>
+                    <li>✓ Notificações & Lembretes WhatsApp</li>
                     <li>✓ Agenda interna e clientes</li>
-                    <li style="color: var(--text-muted);">✕ Sem Google Calendar</li>
+                    <li style="color: #ef4444;">✕ Sem Google Calendar no celular</li>
+                    <li style="color: #ef4444;">✕ Sem controle financeiro / comissões</li>
+                    <li style="color: #ef4444;">✕ Sem reagendamento online pelo cliente</li>
+                    <li style="color: #ef4444;">✕ Horário de atendimento fixo</li>
                 </ul>
             </div>
             <div>
@@ -183,16 +186,19 @@ $invoices = $stmtInv->fetchAll();
                     R$ 19,90 <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">/ mês</span>
                 </div>
 
-                <ul style="list-style: none; padding: 0; margin: 0 0 24px 0; font-size: 0.82rem; color: var(--text-secondary); line-height: 2;">
+                <ul style="list-style: none; padding: 0; margin: 0 0 24px 0; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.9;">
                     <li>✓ <strong>150 agendamentos</strong> / mês</li>
-                    <li>✓ <strong>Até 3 profissionais</strong></li>
+                    <li>✓ <strong>Até 3 profissionais / cadeiras</strong></li>
                     <li>✓ <strong>Serviços ilimitados</strong></li>
-                    <li>✓ <strong>Google Calendar integrado</strong></li>
-                    <li>✓ Confirmações & Lembretes WhatsApp</li>
-                    <li>✓ Reagendamento e Cancelamento</li>
-                    <li>✓ Cadastro e Histórico de clientes</li>
-                    <li>✓ Dashboard com relatórios básicos</li>
-                    <li>✓ QR Code de balcão e link personalizado</li>
+                    <li>✓ <strong>Google Calendar nativo (celular)</strong></li>
+                    <li>✓ <strong>Link curto oficial 4u.ia.br/sua-marca</strong></li>
+                    <li>✓ <strong>Reagendamento & cancelamento online</strong></li>
+                    <li>✓ Lembretes automáticos 2h e 15m antes</li>
+                    <li>✓ <strong>Painel financeiro com faturamento diário</strong></li>
+                    <li>✓ <strong>Pausas de almoço e bloqueio de horários</strong></li>
+                    <li>✓ Confirmações & WhatsApp em cada atendimento</li>
+                    <li>✓ <strong>Recorrência Automática (Cartão/PIX)</strong></li>
+                    <li>✓ Suporte rápido via WhatsApp</li>
                 </ul>
             </div>
             <div style="display: flex; flex-direction: column; gap: 8px;">
@@ -217,16 +223,19 @@ $invoices = $stmtInv->fetchAll();
                     R$ 39,90 <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">/ mês</span>
                 </div>
 
-                <ul style="list-style: none; padding: 0; margin: 0 0 24px 0; font-size: 0.82rem; color: var(--text-secondary); line-height: 2;">
-                    <li>✓ <strong>500 agendamentos</strong> / mês</li>
-                    <li>✓ <strong>Profissionais ilimitados</strong></li>
-                    <li>✓ <strong>Serviços ilimitados</strong></li>
-                    <li>✓ <strong>Google Calendar (Múltiplos calendários)</strong></li>
-                    <li>✓ Lembretes automáticos via WhatsApp</li>
-                    <li>✓ Clientes e Histórico ilimitados</li>
-                    <li>✓ Relatórios avançados de faturamento</li>
-                    <li>✓ Bloqueio de horários e múltiplos calendários</li>
-                    <li>✓ Suporte prioritário 4U.IA.BR</li>
+                <ul style="list-style: none; padding: 0; margin: 0 0 24px 0; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.9;">
+                    <li>✓ <strong>500 agendamentos / mês (alta capacidade)</strong></li>
+                    <li>✓ <strong>Profissionais & cadeiras ilimitados</strong></li>
+                    <li>✓ <strong>Serviços, clientes e histórico ilimitados</strong></li>
+                    <li>✓ <strong>Google Calendar Multi-agendas (por profissional)</strong></li>
+                    <li>✓ <strong>Link curto 4u.ia.br + QR Code Balcão VIP</strong></li>
+                    <li>✓ <strong>Reagendamento inteligente com reposição de vaga</strong></li>
+                    <li>✓ Lembretes automáticos 2h e 15m antes</li>
+                    <li>✓ <strong>Financeiro completo com comissões por barbeiro</strong></li>
+                    <li>✓ <strong>Escala flexível: folgas, férias e turnos</strong></li>
+                    <li>✓ Múltiplos calendários e unidades/filiais</li>
+                    <li>✓ <strong>Recorrência Automática (Cartão/PIX)</strong></li>
+                    <li>✓ <strong>Suporte Prioritário VIP 4U.IA.BR</strong></li>
                 </ul>
             </div>
             <div style="display: flex; flex-direction: column; gap: 8px;">
