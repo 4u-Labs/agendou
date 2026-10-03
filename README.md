@@ -7,7 +7,7 @@ O **AGENDOU** é um SaaS completo, moderno, multi-tenant e pronto para produçã
 ## 🌟 Principais Recursos
 
 1. **Página Pública de Agendamento do Estabelecimento:**
-   * URL amigável e curta: `https://4u.ia.br/app/agendou/pedromendes`
+   * URL amigável e curta: `https://4u.ia.br/barbearia1` ou `https://4u.ia.br/app/agendou/?slug=barbearia1`
    * Fluxo em 4 passos rápidos no celular (&lt; 60 segundos).
    * **Login com Conta Google (1-Clique):** Auto-preenchimento instantâneo de nome e e-mail via Google Identity Services (GIS).
    * Sem necessidade de criar conta com senha ou baixar aplicativos.
@@ -91,8 +91,8 @@ O **AGENDOU** é um SaaS completo, moderno, multi-tenant e pronto para produçã
 
 ## 🚀 Como Acessar e Testar
 
-### 1. Página Pública do Cliente (Demonstração Pedro Mendes Barbearia):
-👉 **https://4u.ia.br/app/agendou/?slug=pedromendes**
+### 1. Página Pública do Cliente (Demonstração Barbearia 1):
+👉 **https://4u.ia.br/barbearia1** (ou `https://4u.ia.br/app/agendou/?slug=barbearia1`)
 
 ### 2. Painel Administrativo do Estabelecimento:
 👉 **https://4u.ia.br/app/agendou/admin/**  

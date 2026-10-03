@@ -1,7 +1,7 @@
 <?php
 // ========================================================
 // AGENDOU - Main Router & Landing Page
-// Resolves tenant slugs (e.g. /app/agendou/pedromendes) or serves landing
+// Resolves tenant slugs (e.g. /app/agendou/barbearia1) or serves landing
 // ========================================================
 
 require_once __DIR__ . '/config/database.php';
@@ -96,7 +96,7 @@ if ($slug) {
             <button type="button" onclick="triggerPWAInstall()" class="btn-pwa-install" style="background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; padding: 7px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">
                 <span>📲</span> Instalar App
             </button>
-            <a href="/app/agendou/?slug=pedromendes" class="nav-link">Demonstração</a>
+            <a href="/app/agendou/?slug=barbearia1" class="nav-link">Demonstração</a>
             <a href="/app/agendou/cadastro.php" class="nav-link" style="color: var(--primary); font-weight: 700;">Criar Conta Grátis</a>
             <a href="/app/agendou/admin/" class="btn-login-header"><span class="hide-mobile">Entrar no Painel </span><span class="show-mobile-only">Entrar </span>→</a>
         </div>
@@ -114,7 +114,7 @@ if ($slug) {
                 <span>CADASTRAR MINHA BARBEARIA / EMPRESA</span>
                 <span class="cta-arrow">→</span>
             </a>
-            <a href="/app/agendou/?slug=pedromendes" class="btn-cta-secondary">
+            <a href="/app/agendou/?slug=barbearia1" class="btn-cta-secondary">
                 <span>VER DEMONSTRAÇÃO AO VIVO</span>
             </a>
         </div>
@@ -142,7 +142,7 @@ if ($slug) {
             <div class="feature-card">
                 <div class="feat-icon">⚡</div>
                 <h3>Página Própria do Estabelecimento</h3>
-                <p>Link exclusivo para colocar na bio do Instagram (ex: <code>4u.ia.br/app/agendou/pedromendes</code>) com QR Code para balcão.</p>
+                <p>Link exclusivo para colocar na bio do Instagram (ex: <code>4u.ia.br/barbearia1</code>) com QR Code para balcão.</p>
             </div>
             <div class="feature-card">
                 <div class="feat-icon">📅</div>
